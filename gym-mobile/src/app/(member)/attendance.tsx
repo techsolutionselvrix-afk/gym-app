@@ -5,11 +5,11 @@ import {
   StyleSheet,
   ScrollView,
   Pressable,
-  useColorScheme,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
+import { useAppTheme } from '@/context/ThemeContext';
 
 type AttendanceStatus = 'Present' | 'Absent' | 'Rest Day';
 
@@ -22,9 +22,7 @@ type AttendanceRecord = {
 };
 
 export default function AttendanceScreen() {
-  const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
-
+  const { theme } = useAppTheme();
   const [selectedFilter, setSelectedFilter] = useState('All');
 
   const [selectedMonth, setSelectedMonth] = useState(new Date());

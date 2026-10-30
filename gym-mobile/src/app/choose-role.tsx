@@ -4,16 +4,14 @@ import {
   Text,
   Pressable,
   StyleSheet,
-  useColorScheme,
   StatusBar,
   ScrollView,
 } from 'react-native';
 import { router } from 'expo-router';
-import { Colors } from '@/constants/theme';
+import { useAppTheme } from '@/context/ThemeContext';
 
 export default function ChooseRoleScreen() {
-  const scheme = useColorScheme();
-  const theme = Colors[scheme === 'dark' ? 'dark' : 'light'];
+  const { theme, themeMode } = useAppTheme();
 
   const roles = [
     {
@@ -61,7 +59,7 @@ const handleRoleSelect = (role: string) => {
   return (
     <View style={[styles.screen, { backgroundColor: theme.background }]}>
       <StatusBar
-        barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'}
+        barStyle={themeMode === 'dark' ? 'light-content' : 'dark-content'}
       />
 
       <ScrollView

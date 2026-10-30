@@ -1,26 +1,219 @@
-import { StyleSheet, Text, View } from 'react-native';
+import {
+View,
+Text,
+StyleSheet,
+ScrollView,
+Pressable,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useAppTheme } from '@/context/ThemeContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 
-export default function AdminMoreScreen() {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>More</Text>
-      <Text style={styles.message}>More admin options are coming soon.</Text>
+const menuItems = [
+{
+title: 'Diet Plans',
+subtitle: 'Create and manage diet plans',
+icon: 'nutrition-outline' as const,
+route: '/(admin)/diet-plans',
+},
+{
+title: 'Red List',
+subtitle: 'View members requiring attention',
+icon: 'alert-circle-outline' as const,
+route: '/(admin)/red-list',
+},
+{
+title: 'Customization',
+subtitle: 'Customize your gym experience',
+icon: 'color-palette-outline' as const,
+route: '/(admin)/customization',
+},
+{
+title: 'Subscription',
+subtitle: 'Manage your subscription plan',
+icon: 'card-outline' as const,
+route: '/(admin)/subscription',
+},
+{
+title: 'Profile',
+subtitle: 'Manage your personal information',
+icon: 'person-outline' as const,
+route: '/(admin)/profile',
+},
+];
+
+export default function MoreScreen() {
+const { theme } = useAppTheme();
+
+return (
+<SafeAreaView
+style={[styles.container, { backgroundColor: theme.background }]}
+> <ScrollView showsVerticalScrollIndicator={false}> <View style={styles.header}>
+<Text style={[styles.title, { color: theme.text }]}>More</Text>
+<Text style={[styles.subtitle, { color: theme.secondaryText }]}>
+Manage your gym and account </Text> </View>
+
+```
+    <View style={[styles.profileCard, { backgroundColor: theme.card }]}>
+      <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
+        <Ionicons name="person" size={28} color="#FFFFFF" />
+      </View>
+
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.profileName, { color: theme.text }]}>
+          Gym Owner
+        </Text>
+        <Text style={[styles.profileEmail, { color: theme.secondaryText }]}>
+          Manage your owner account
+        </Text>
+      </View>
+
+      <Ionicons
+        name="chevron-forward"
+        size={20}
+        color={theme.secondaryText}
+      />
     </View>
-  );
+
+    <Text style={[styles.sectionTitle, { color: theme.text }]}>
+      Management
+    </Text>
+
+    <View
+      style={[
+        styles.menuCard,
+        { backgroundColor: theme.card, borderColor: theme.border },
+      ]}
+    >
+      {menuItems.map((item, index) => (
+        <Pressable
+          key={item.title}
+          onPress={() => router.push(item.route as any)}
+          style={[
+            styles.menuItem,
+            index !== menuItems.length - 1 && {
+              borderBottomWidth: 1,
+              borderBottomColor: theme.border,
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.menuIcon,
+              { backgroundColor: theme.background },
+            ]}
+          >
+            <Ionicons
+              name={item.icon}
+              size={22}
+              color={theme.primary}
+            />
+          </View>
+
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.menuTitle, { color: theme.text }]}>
+              {item.title}
+            </Text>
+            <Text style={[styles.menuSubtitle, { color: theme.secondaryText }]}>
+              {item.subtitle}
+            </Text>
+          </View>
+
+          <Ionicons
+            name="chevron-forward"
+            size={18}
+            color={theme.secondaryText}
+          />
+        </Pressable>
+      ))}
+    </View>
+
+    <Text style={[styles.version, { color: theme.secondaryText }]}>
+      GymSync • Version 1.0.0
+    </Text>
+  </ScrollView>
+</SafeAreaView>
+ 
+
+);
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: 24,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  message: {
-    fontSize: 16,
-  },
+container: {
+flex: 1,
+paddingHorizontal: 20,
+},
+header: {
+marginTop: 15,
+marginBottom: 22,
+},
+title: {
+fontSize: 26,
+fontWeight: 'bold',
+},
+subtitle: {
+fontSize: 13,
+marginTop: 5,
+},
+profileCard: {
+flexDirection: 'row',
+alignItems: 'center',
+padding: 17,
+borderRadius: 15,
+marginBottom: 27,
+gap: 13,
+},
+avatar: {
+width: 52,
+height: 52,
+borderRadius: 26,
+alignItems: 'center',
+justifyContent: 'center',
+},
+profileName: {
+fontSize: 16,
+fontWeight: 'bold',
+},
+profileEmail: {
+fontSize: 12,
+marginTop: 5,
+},
+sectionTitle: {
+fontSize: 18,
+fontWeight: 'bold',
+marginBottom: 13,
+},
+menuCard: {
+borderRadius: 14,
+borderWidth: 1,
+paddingHorizontal: 14,
+},
+menuItem: {
+flexDirection: 'row',
+alignItems: 'center',
+paddingVertical: 17,
+gap: 13,
+},
+menuIcon: {
+width: 44,
+height: 44,
+borderRadius: 12,
+alignItems: 'center',
+justifyContent: 'center',
+},
+menuTitle: {
+fontSize: 14,
+fontWeight: '600',
+},
+menuSubtitle: {
+fontSize: 11,
+marginTop: 4,
+},
+version: {
+textAlign: 'center',
+fontSize: 11,
+marginTop: 25,
+marginBottom: 20,
+},
 });

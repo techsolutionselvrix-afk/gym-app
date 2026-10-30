@@ -8,16 +8,14 @@ import {
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from 'react-native';
-import { Colors } from '@/constants/theme';
+import { useAppTheme } from '@/context/ThemeContext';
 
 export default function ScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [scanResult, setScanResult] = useState('');
 
-  const colorScheme = useColorScheme();
-const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
+  const { theme, themeMode } = useAppTheme();
 
   useEffect(() => {
     setScanned(false);

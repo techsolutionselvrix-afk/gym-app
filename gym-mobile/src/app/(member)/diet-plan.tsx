@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 import { router } from 'expo-router';
+import { useAppTheme } from '@/context/ThemeContext';
 
 const meals = [
   {
@@ -45,8 +46,7 @@ const meals = [
 ];
 
 export default function DietPlanScreen() {
-  const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
+  const { theme, themeMode } = useAppTheme();
   const [waterGlasses, setWaterGlasses] = useState(0);
 
   const styles = createStyles(theme);
@@ -54,7 +54,7 @@ export default function DietPlanScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <StatusBar
-        barStyle={colorScheme === 'dark' ? 'light-content' : 'dark-content'}
+        barStyle={themeMode === 'dark' ? 'light-content' : 'dark-content'}
       />
 
       <ScrollView

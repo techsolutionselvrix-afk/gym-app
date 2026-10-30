@@ -23,7 +23,13 @@ export const Colors = {
 
 export type ThemeColors = typeof Colors.light;
 export const Spacing = {
+  one: 4,
   two: 8,
+  three: 12,
+  four: 16,
   five: 20,
+  six: 24,
 };
+export const BottomTabInset = 60;
+export const MaxContentWidth = 960;
 

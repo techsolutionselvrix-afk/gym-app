@@ -1,18 +1,17 @@
-
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { useColorScheme } from 'react-native';
-import { Colors } from '@/constants/theme';
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
+import { ThemeProvider, useAppTheme } from '@/context/ThemeContext';
+
+function AppNavigator() {
+  const { theme, themeMode } = useAppTheme();
 
   return (
-    <SafeAreaProvider>
+    <>
       <StatusBar
-        style={colorScheme === 'dark' ? 'light' : 'dark'}
+        style={themeMode === 'dark' ? 'light' : 'dark'}
+        
       />
 
       <Stack
@@ -30,15 +29,25 @@ export default function RootLayout() {
         <Stack.Screen name="(auth)/login" />
         <Stack.Screen name="(auth)/register" />
 
-        {/* Admin */}
+        {/* Gym Owner */}
         <Stack.Screen name="(admin)" />
 
         {/* Member */}
         <Stack.Screen name="(member)" />
 
-       
+        {/* Super Admin */}
+        <Stack.Screen name="(super-admin)" />
       </Stack>
-    </SafeAreaProvider>
+    </>
   );
 }
 
+export default function RootLayout() {
+  return (
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <AppNavigator />
+      </ThemeProvider>
+    </SafeAreaProvider>
+  );
+}

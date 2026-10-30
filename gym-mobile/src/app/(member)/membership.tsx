@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors } from '@/constants/theme';
+import { useAppTheme } from '@/context/ThemeContext';
 
 const plans = [
   {
@@ -36,8 +37,7 @@ const plans = [
 ];
 
 export default function MembershipScreen() {
-  const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
+  const { theme, themeMode } = useAppTheme();
   const styles = createStyles(theme);
 
   return (

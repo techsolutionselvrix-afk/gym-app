@@ -12,10 +12,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
+import { useAppTheme } from '@/context/ThemeContext';
 
 export default function ProfileScreen() {
-  const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme === 'dark' ? 'dark' : 'light'];
+  const { theme, themeMode } = useAppTheme();
   const styles = createStyles(theme);
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);

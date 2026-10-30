@@ -13,10 +13,10 @@ import { router } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppTheme } from '@/context/ThemeContext';
 
 export default function MemberDashboard() {
-  const scheme = useColorScheme();
-  const theme = Colors[scheme === 'dark' ? 'dark' : 'light'];
+  const { theme, themeMode } = useAppTheme();
 
   const stats = [
     { label: 'Attendance', value: '12', icon: '📅' },
@@ -28,7 +28,7 @@ export default function MemberDashboard() {
     <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
     <View style={[styles.screen, { backgroundColor: theme.background }]}>
       <StatusBar
-        barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'}
+        barStyle={themeMode === 'dark' ? 'light-content' : 'dark-content'}
       />
 
       <ScrollView

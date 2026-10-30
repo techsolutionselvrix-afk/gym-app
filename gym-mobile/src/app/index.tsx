@@ -4,32 +4,22 @@ import {
   Text,
   StyleSheet,
   Pressable,
-  useColorScheme,
   StatusBar,
 } from 'react-native';
 import { router } from 'expo-router'; 
-
+import { useAppTheme } from '@/context/ThemeContext';
 import { useState } from 'react';
 import { Colors } from '@/constants/theme';
 
 export default function Index() {
-  const systemTheme = useColorScheme();
+  const { theme, themeMode, toggleTheme } = useAppTheme();
 
-  const [manualTheme, setManualTheme] = useState<
-    'light' | 'dark' | null
-  >(null);
-
-  const currentTheme =
-    manualTheme ?? (systemTheme === 'dark' ? 'dark' : 'light');
-
-  const theme = Colors[currentTheme];
-  const styles = createStyles(theme);
-
+ const styles = createStyles(theme, themeMode);
   return (
     <View style={styles.container}>
       <StatusBar
-        barStyle={currentTheme === 'dark' ? 'light-content' : 'dark-content'}
-      />
+  barStyle={themeMode === 'dark' ? 'light-content' : 'dark-content'}
+/>
 
       {/* Header */}
       <View style={styles.header}>
@@ -43,12 +33,10 @@ export default function Index() {
 
         <Pressable
           style={styles.themeButton}
-          onPress={() =>
-            setManualTheme(currentTheme === 'dark' ? 'light' : 'dark')
-          }
+         onPress={toggleTheme}
         >
           <Text style={styles.themeIcon}>
-            {currentTheme === 'dark' ? '☀' : '☾'}
+            {themeMode === 'dark' ? '☀' : '☾'}
           </Text>
         </Pressable>
       </View>
@@ -115,7 +103,7 @@ export default function Index() {
   );
 }
 
-function createStyles(theme: (typeof Colors)['light']) {
+function createStyles(theme: (typeof Colors)['light'], themeMode: 'light' | 'dark') {
   return StyleSheet.create({
     container: {
       flex: 1,
@@ -287,13 +275,13 @@ function createStyles(theme: (typeof Colors)['light']) {
     },
 
     primaryButtonText: {
-      color: currentButtonText(theme.primary),
+      color: themeMode === 'dark' ? '#141A17' : '#FFFFFF',
       fontSize: 16,
       fontWeight: '800',
     },
 
     buttonArrow: {
-      color: currentButtonText(theme.primary),
+      color: themeMode === 'dark' ? '#141A17' : '#FFFFFF',
       fontSize: 21,
       marginLeft: 10,
     },
@@ -324,7 +312,5 @@ function createStyles(theme: (typeof Colors)['light']) {
   });
 }
 
-function currentButtonText(background: string) {
-  return background === '#A8C5AE' ? '#141A17' : '#FFFFFF';
-}
+
 

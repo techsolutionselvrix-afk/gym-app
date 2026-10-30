@@ -6,7 +6,6 @@ import {
   TextInput,
   Pressable,
   StyleSheet,
-  useColorScheme,
   StatusBar,
   Alert,
   KeyboardAvoidingView,
@@ -14,12 +13,11 @@ import {
   ScrollView,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useAppTheme } from '@/context/ThemeContext';
 
-import { Colors } from '@/constants/theme';
 
 export default function LoginScreen() {
-  const scheme = useColorScheme();
-  const theme = Colors[scheme === 'dark' ? 'dark' : 'light'];
+ const { theme, themeMode } = useAppTheme();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -53,7 +51,10 @@ const handleLogin = () => {
     router.replace('/(admin)/dashboard');
   } else if (role === 'member') {
     router.replace('/(member)/dashboard');
-  } else {
+  }else if (role === 'admin') {
+    router.replace('/(super-admin)/dashboard');
+  }
+   else {
     Alert.alert(
       'Role missing',
       'Please select your role again.'
@@ -69,7 +70,7 @@ const handleLogin = () => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <StatusBar
-  barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'}
+  barStyle={themeMode === 'dark' ? 'light-content' : 'dark-content'}
 />
 
       <ScrollView
@@ -152,7 +153,7 @@ const handleLogin = () => {
             <Text
               style={[
                 styles.loginButtonText,
-                { color: scheme === 'dark' ? '#141A17' : '#FFFFFF' },
+                { color: themeMode === 'dark' ? '#141A17' : '#FFFFFF' },
               ]}
             >
               Log In

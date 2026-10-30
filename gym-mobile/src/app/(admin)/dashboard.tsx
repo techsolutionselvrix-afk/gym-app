@@ -4,18 +4,17 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  useColorScheme,
   StatusBar,
 } from 'react-native';
 
 import { router } from 'expo-router';
-import { Colors } from '@/constants/theme';
+import { useAppTheme } from '@/context/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
+
 export default function OwnerDashboard() {
-  const scheme = useColorScheme();
-  const theme = Colors[scheme === 'dark' ? 'dark' : 'light'];
+ const { theme, themeMode } = useAppTheme();
 
   const stats = [
     {
@@ -76,7 +75,7 @@ console.log('ScrollView:', typeof ScrollView);
       edges={['top', 'bottom']}
     >
       <StatusBar
-        barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'}
+        barStyle={themeMode === 'dark' ? 'light-content' : 'dark-content'}
       />
 
       <View style={styles.screen}>

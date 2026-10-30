@@ -7,18 +7,15 @@ import {
   Pressable,
   StyleSheet,
   ScrollView,
-  useColorScheme,
   Alert,
 } from 'react-native';
-// import { router } from 'expo-router';
-import { Colors } from '@/constants/theme';
+import { useAppTheme } from '@/context/ThemeContext';
 import { router, useLocalSearchParams } from 'expo-router';
+import { Colors } from '@/constants/theme';
 
 export default function RegisterScreen() {
-  const systemTheme = useColorScheme();
-  const mode = systemTheme === 'dark' ? 'dark' : 'light';
-  const theme = Colors[mode];
-  const styles = createStyles(theme);
+  const { theme } = useAppTheme();
+const styles = createStyles(theme);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
