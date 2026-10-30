@@ -1,0 +1,283 @@
+
+import { useState } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  StyleSheet,
+  useColorScheme,
+  StatusBar,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+
+import { Colors } from '@/constants/theme';
+
+export default function LoginScreen() {
+  const scheme = useColorScheme();
+  const theme = Colors[scheme === 'dark' ? 'dark' : 'light'];
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+ const { role } = useLocalSearchParams<{ role?: string }>();
+
+console.log('Received role on Login page:', role);
+
+
+
+const handleLogin = () => {
+  if (!email.trim() || !password) {
+    Alert.alert(
+      'Missing details',
+      'Please enter your email and password.'
+    );
+    return;
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    Alert.alert(
+      'Invalid email',
+      'Please enter a valid email address.'
+    );
+    return;
+  }
+
+  console.log('Selected role:', role);
+
+  if (role === 'owner') {
+    router.replace('/(admin)/dashboard');
+  } else if (role === 'member') {
+    router.replace('/(member)/dashboard');
+  } else {
+    Alert.alert(
+      'Role missing',
+      'Please select your role again.'
+    );
+  }
+};
+
+
+
+  return (
+    <KeyboardAvoidingView
+      style={[styles.screen, { backgroundColor: theme.background }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <StatusBar
+  barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'}
+/>
+
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Pressable onPress={() => router.back()} style={styles.backButton}>
+          <Text style={[styles.backText, { color: theme.text }]}>← Back</Text>
+        </Pressable>
+
+        <View style={styles.header}>
+          <View style={[styles.logo, { backgroundColor: theme.primary }]}>
+            <Text style={styles.logoText}>G</Text>
+          </View>
+
+          <Text style={[styles.brand, { color: theme.text }]}>GYMSYNC</Text>
+
+          <Text style={[styles.heading, { color: theme.text }]}>
+            Welcome back!
+          </Text>
+
+          <Text style={[styles.subtitle, { color: theme.secondaryText }]}>
+            Sign in to continue your fitness journey.
+          </Text>
+        </View>
+
+        <View
+          style={[
+            styles.form,
+            { backgroundColor: theme.card, borderColor: theme.border },
+          ]}
+        >
+          <Text style={[styles.label, { color: theme.text }]}>Email address</Text>
+
+          <TextInput
+            style={[
+              styles.input,
+              {
+                backgroundColor: theme.inputBackground,
+                color: theme.text,
+                borderColor: theme.border,
+              },
+            ]}
+            placeholder="you@example.com"
+            placeholderTextColor={theme.secondaryText}
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+
+          <Text style={[styles.label, { color: theme.text }]}>Password</Text>
+
+          <TextInput
+            style={[
+              styles.input,
+              {
+                backgroundColor: theme.inputBackground,
+                color: theme.text,
+                borderColor: theme.border,
+              },
+            ]}
+            placeholder="Enter your password"
+            placeholderTextColor={theme.secondaryText}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            autoCapitalize="none"
+          />
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.loginButton,
+              { backgroundColor: theme.primary },
+              pressed && styles.pressed,
+            ]}
+            onPress={handleLogin}
+          >
+            <Text
+              style={[
+                styles.loginButtonText,
+                { color: scheme === 'dark' ? '#141A17' : '#FFFFFF' },
+              ]}
+            >
+              Log In
+            </Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.registerRow}>
+          <Text style={{ color: theme.secondaryText }}>
+            Don't have an account?{' '}
+          </Text>
+
+          <Pressable onPress={() => router.push('/(auth)/register')}>
+            <Text style={[styles.registerText, { color: theme.primary }]}>
+              Create account
+            </Text>
+          </Pressable>
+        </View>
+
+        <Text style={[styles.footer, { color: theme.secondaryText }]}>
+          Your fitness journey starts here.
+        </Text>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 24,
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+    paddingVertical: 10,
+    marginBottom: 20,
+  },
+  backText: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  logo: {
+    width: 54,
+    height: 54,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  logoText: {
+    color: '#FFFFFF',
+    fontSize: 28,
+    fontWeight: '800',
+  },
+  brand: {
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 3,
+    marginBottom: 28,
+  },
+  heading: {
+    fontSize: 30,
+    fontWeight: '800',
+    marginBottom: 10,
+  },
+  subtitle: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 21,
+  },
+  form: {
+    borderWidth: 1,
+    borderRadius: 22,
+    padding: 20,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 9,
+  },
+  input: {
+    height: 52,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    fontSize: 15,
+    marginBottom: 20,
+  },
+  loginButton: {
+    height: 54,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  loginButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  pressed: {
+    opacity: 0.8,
+  },
+  registerRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    marginTop: 24,
+  },
+  registerText: {
+    fontWeight: '700',
+  },
+  footer: {
+    textAlign: 'center',
+    fontSize: 12,
+    marginTop: 30,
+  },
+});
+
