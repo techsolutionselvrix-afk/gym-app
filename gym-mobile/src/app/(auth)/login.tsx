@@ -24,6 +24,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
  const { role } = useLocalSearchParams<{ role?: string }>();
 
@@ -35,13 +36,19 @@ const routeForRole = (r: string) => {
   return '/(member)/dashboard';
 };
 
+const showError = (msg: string) => {
+  setErrorMsg(msg);
+  Alert.alert('Login', msg);
+};
+
 const handleLogin = async () => {
+  setErrorMsg(null);
   if (!email.trim() || !password) {
-    Alert.alert('Missing details', 'Please enter your email and password.');
+    showError('Please enter your email and password.');
     return;
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-    Alert.alert('Invalid email', 'Please enter a valid email address.');
+    showError('Please enter a valid email address.');
     return;
   }
 
@@ -52,14 +59,14 @@ const handleLogin = async () => {
       password,
     });
     if (error) {
-      Alert.alert('Sign-in failed', error.message);
+      showError(error.message);
       return;
     }
     const me = await Api.me();
     router.replace(routeForRole(me.role) as any);
   } catch (e) {
     const msg = e instanceof ApiError ? e.message : (e as Error).message;
-    Alert.alert('Login error', msg);
+    showError(msg ?? 'Unexpected error. Please try again.');
   } finally {
     setSubmitting(false);
   }
@@ -145,11 +152,25 @@ const handleLogin = async () => {
             autoCapitalize="none"
           />
 
+          {errorMsg && (
+            <View style={{
+              marginTop: 14,
+              padding: 12,
+              borderRadius: 10,
+              borderWidth: 1,
+              backgroundColor: 'rgba(220, 60, 60, 0.08)',
+              borderColor: 'rgba(220, 60, 60, 0.5)',
+            }}>
+              <Text style={{ color: theme.text, fontSize: 13, lineHeight: 18 }}>{errorMsg}</Text>
+            </View>
+          )}
+
           <Pressable
             style={({ pressed }) => [
               styles.loginButton,
               { backgroundColor: theme.primary },
               pressed && styles.pressed,
+              submitting && { opacity: 0.6 },
             ]}
             onPress={handleLogin}
             disabled={submitting}

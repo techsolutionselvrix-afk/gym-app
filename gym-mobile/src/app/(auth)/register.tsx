@@ -23,13 +23,20 @@ const styles = createStyles(theme);
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState<{ kind: 'error' | 'success'; msg: string } | null>(null);
 
   const { role } = useLocalSearchParams<{ role?: string }>();
 
-console.log('Received role on Register page:', role);
 
- 
+const notify = (title: string, msg: string, kind: 'error' | 'success' = 'error') => {
+  setFeedback({ kind, msg: `${title}: ${msg}` });
+  // Alert.alert also fires on native; on web it falls back to window.alert.
+  Alert.alert(title, msg);
+};
+
 const handleRegister = async () => {
+  setFeedback(null);
   if (
     !name.trim() ||
     !email.trim() ||
@@ -37,53 +44,62 @@ const handleRegister = async () => {
     !password ||
     !confirmPassword
   ) {
-    Alert.alert('Missing details', 'Please fill in all fields.');
+    notify('Missing details', 'Please fill in all fields.');
     return;
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-    Alert.alert('Invalid email', 'Please enter a valid email address.');
+    notify('Invalid email', 'Please enter a valid email address.');
     return;
   }
   if (!/^\d{10}$/.test(phone.trim())) {
-    Alert.alert('Invalid phone', 'Enter a 10-digit phone number.');
+    notify('Invalid phone', 'Enter a 10-digit phone number.');
     return;
   }
   if (password.length < 8) {
-    Alert.alert('Weak password', 'Password must contain at least 8 characters.');
+    notify('Weak password', 'Password must contain at least 8 characters.');
     return;
   }
   if (password !== confirmPassword) {
-    Alert.alert('Password mismatch', 'Both passwords must match.');
+    notify('Password mismatch', 'Both passwords must match.');
     return;
   }
 
-  const { error } = await supabase.auth.signUp({
-    email: email.trim(),
-    password,
-    options: {
-      data: {
-        full_name: name.trim(),
-        phone: phone.trim(),
-        requested_role: role ?? 'member',
+  setSubmitting(true);
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        data: {
+          full_name: name.trim(),
+          phone: phone.trim(),
+          requested_role: role ?? 'member',
+        },
       },
-    },
-  });
-  if (error) {
-    Alert.alert('Sign-up failed', error.message);
-    return;
-  }
+    });
+    if (error) {
+      const m = error.message || '';
+      // Make Supabase's cryptic rate-limit error actionable.
+      const friendly = /rate limit|over_email_send/i.test(m)
+        ? 'Too many signup attempts right now (Supabase email rate limit). Please wait a few minutes and try again.'
+        : m;
+      notify('Sign-up failed', friendly);
+      return;
+    }
 
-  Alert.alert(
-    'Account created',
-    'Check your email to confirm, then sign in.',
-    [
-      {
-        text: 'OK',
-        onPress: () =>
-          router.replace({ pathname: '/(auth)/login', params: { role: role ?? 'member' } }),
-      },
-    ],
-  );
+    // If email confirmation is OFF, user comes back with a session already.
+    if (data.session) {
+      notify('Account created', 'Signing you in...', 'success');
+      router.replace({ pathname: '/(auth)/login', params: { role: role ?? 'member' } });
+      return;
+    }
+    notify('Account created', 'Check your email to confirm, then sign in.', 'success');
+    router.replace({ pathname: '/(auth)/login', params: { role: role ?? 'member' } });
+  } catch (e) {
+    notify('Unexpected error', (e as Error).message ?? 'Please try again.');
+  } finally {
+    setSubmitting(false);
+  }
 };
 
 
@@ -165,9 +181,19 @@ const handleRegister = async () => {
           secureTextEntry
         />
 
-        <Pressable style={styles.submitButton} onPress={handleRegister}>
-          <Text style={styles.submitText}>Create Account</Text>
-          <Text style={styles.arrow}>→</Text>
+        {feedback && (
+          <View style={[styles.feedback, feedback.kind === 'error' ? styles.feedbackError : styles.feedbackSuccess]}>
+            <Text style={styles.feedbackText}>{feedback.msg}</Text>
+          </View>
+        )}
+
+        <Pressable
+          style={({ pressed }) => [styles.submitButton, pressed && { opacity: 0.85 }, submitting && { opacity: 0.6 }]}
+          onPress={handleRegister}
+          disabled={submitting}
+        >
+          <Text style={styles.submitText}>{submitting ? 'Creating...' : 'Create Account'}</Text>
+          {!submitting && <Text style={styles.arrow}>→</Text>}
         </Pressable>
       </View>
 
@@ -318,6 +344,25 @@ function createStyles(theme: (typeof Colors)['light']) {
       letterSpacing: 1.5,
       textAlign: 'center',
       marginTop: 8,
+    },
+    feedback: {
+      marginTop: 18,
+      padding: 12,
+      borderRadius: 10,
+      borderWidth: 1,
+    },
+    feedbackError: {
+      backgroundColor: 'rgba(220, 60, 60, 0.08)',
+      borderColor: 'rgba(220, 60, 60, 0.5)',
+    },
+    feedbackSuccess: {
+      backgroundColor: 'rgba(60, 180, 110, 0.08)',
+      borderColor: 'rgba(60, 180, 110, 0.5)',
+    },
+    feedbackText: {
+      color: theme.text,
+      fontSize: 13,
+      lineHeight: 18,
     },
   });
 }
