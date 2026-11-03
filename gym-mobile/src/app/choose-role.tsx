@@ -28,30 +28,15 @@ export default function ChooseRoleScreen() {
       description:
         'Manage your gym, members, membership plans, and daily operations.',
     },
-    {
-      id: 'admin',
-      icon: '🛡️',
-      title: 'Super Admin',
-      description:
-        'Manage gyms and oversee the GymSync platform.',
-    },
   ];
 
 
 const handleRoleSelect = (role: string) => {
   console.log('Selected role on Choose Role page:', role);
-
-  if (role === 'member') {
-    router.push({
-      pathname: '/(auth)/register',
-      params: { role: 'member' },
-    });
-  } else if (role === 'owner' || role === 'admin') {
-    router.push({
-      pathname: '/(auth)/login',
-      params: { role: role },
-    });
-  }
+  router.push({
+    pathname: '/(auth)/login',
+    params: { role },
+  });
 };
 
 

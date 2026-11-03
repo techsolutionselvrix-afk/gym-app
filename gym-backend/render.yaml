@@ -1,0 +1,38 @@
+# Render Blueprint for the FastAPI backend.
+# To use: in Render dashboard -> New -> Blueprint -> pick this repo.
+# Then set the secret env vars in the Render service UI (never commit them).
+
+services:
+  - type: web
+    name: gym-backend
+    runtime: python
+    region: oregon
+    plan: free
+    rootDir: gym-backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips "*"
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_NAME
+        value: gym-backend
+      - key: LOG_LEVEL
+        value: INFO
+      - key: PYTHON_VERSION
+        value: "3.12.5"
+      # --- Secrets: set in Render dashboard, do NOT put real values here ---
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: SUPER_ADMIN_EMAIL
+        sync: false
+      - key: SUPER_ADMIN_PASSWORD
+        sync: false

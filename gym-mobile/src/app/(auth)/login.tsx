@@ -14,6 +14,8 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useAppTheme } from '@/context/ThemeContext';
+import { supabase } from '@/lib/supabase';
+import { Api, ApiError } from '@/lib/api';
 
 
 export default function LoginScreen() {
@@ -21,44 +23,45 @@ export default function LoginScreen() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
  const { role } = useLocalSearchParams<{ role?: string }>();
 
-console.log('Received role on Login page:', role);
 
 
+const routeForRole = (r: string) => {
+  if (r === 'super_admin') return '/(super-admin)/dashboard';
+  if (r === 'admin') return '/(admin)/dashboard';
+  return '/(member)/dashboard';
+};
 
-const handleLogin = () => {
+const handleLogin = async () => {
   if (!email.trim() || !password) {
-    Alert.alert(
-      'Missing details',
-      'Please enter your email and password.'
-    );
+    Alert.alert('Missing details', 'Please enter your email and password.');
     return;
   }
-
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-    Alert.alert(
-      'Invalid email',
-      'Please enter a valid email address.'
-    );
+    Alert.alert('Invalid email', 'Please enter a valid email address.');
     return;
   }
 
-  console.log('Selected role:', role);
-
-  if (role === 'owner') {
-    router.replace('/(admin)/dashboard');
-  } else if (role === 'member') {
-    router.replace('/(member)/dashboard');
-  }else if (role === 'admin') {
-    router.replace('/(super-admin)/dashboard');
-  }
-   else {
-    Alert.alert(
-      'Role missing',
-      'Please select your role again.'
-    );
+  setSubmitting(true);
+  try {
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    if (error) {
+      Alert.alert('Sign-in failed', error.message);
+      return;
+    }
+    const me = await Api.me();
+    router.replace(routeForRole(me.role) as any);
+  } catch (e) {
+    const msg = e instanceof ApiError ? e.message : (e as Error).message;
+    Alert.alert('Login error', msg);
+  } finally {
+    setSubmitting(false);
   }
 };
 
@@ -149,6 +152,7 @@ const handleLogin = () => {
               pressed && styles.pressed,
             ]}
             onPress={handleLogin}
+            disabled={submitting}
           >
             <Text
               style={[
@@ -156,7 +160,7 @@ const handleLogin = () => {
                 { color: themeMode === 'dark' ? '#141A17' : '#FFFFFF' },
               ]}
             >
-              Log In
+              {submitting ? 'Signing in...' : 'Log In'}
             </Text>
           </Pressable>
         </View>

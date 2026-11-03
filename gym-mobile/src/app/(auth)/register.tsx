@@ -12,6 +12,7 @@ import {
 import { useAppTheme } from '@/context/ThemeContext';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors } from '@/constants/theme';
+import { supabase } from '@/lib/supabase';
 
 export default function RegisterScreen() {
   const { theme } = useAppTheme();
@@ -28,7 +29,7 @@ const styles = createStyles(theme);
 console.log('Received role on Register page:', role);
 
  
-const handleRegister = () => {
+const handleRegister = async () => {
   if (
     !name.trim() ||
     !email.trim() ||
@@ -39,50 +40,50 @@ const handleRegister = () => {
     Alert.alert('Missing details', 'Please fill in all fields.');
     return;
   }
-
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
     Alert.alert('Invalid email', 'Please enter a valid email address.');
     return;
   }
-
   if (!/^\d{10}$/.test(phone.trim())) {
     Alert.alert('Invalid phone', 'Enter a 10-digit phone number.');
     return;
   }
-
   if (password.length < 8) {
-    Alert.alert(
-      'Weak password',
-      'Password must contain at least 8 characters.'
-    );
+    Alert.alert('Weak password', 'Password must contain at least 8 characters.');
     return;
   }
-
   if (password !== confirmPassword) {
     Alert.alert('Password mismatch', 'Both passwords must match.');
     return;
   }
 
-
-Alert.alert(
-  'Form validated!',
-  'Your registration form is ready. We will connect it to our backend next.',
-  [
-    {
-      text: 'OK',
-      onPress: () => {
-        router.replace({
-          pathname: '/(auth)/login',
-          params: {
-            role: role ?? 'member',
-          },
-        });
+  const { error } = await supabase.auth.signUp({
+    email: email.trim(),
+    password,
+    options: {
+      data: {
+        full_name: name.trim(),
+        phone: phone.trim(),
+        requested_role: role ?? 'member',
       },
     },
-  ]
-);
+  });
+  if (error) {
+    Alert.alert('Sign-up failed', error.message);
+    return;
+  }
 
-
+  Alert.alert(
+    'Account created',
+    'Check your email to confirm, then sign in.',
+    [
+      {
+        text: 'OK',
+        onPress: () =>
+          router.replace({ pathname: '/(auth)/login', params: { role: role ?? 'member' } }),
+      },
+    ],
+  );
 };
 
 
