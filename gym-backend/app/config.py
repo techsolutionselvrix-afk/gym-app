@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     supabase_jwt_secret: str
 
     cors_origins: str = Field(default="")
+    cors_origin_regex: str | None = Field(default=None)
     rate_limit_default: str = Field(default="100/minute")
     rate_limit_auth: str = Field(default="10/minute")
 
