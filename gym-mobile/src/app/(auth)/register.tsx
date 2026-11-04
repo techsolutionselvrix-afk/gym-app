@@ -8,11 +8,20 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  Modal,
 } from 'react-native';
 import { useAppTheme } from '@/context/ThemeContext';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
+
+type GenderValue = 'male' | 'female' | 'other' | 'prefer_not_to_say';
+const GENDERS: { label: string; value: GenderValue }[] = [
+  { label: 'Male', value: 'male' },
+  { label: 'Female', value: 'female' },
+  { label: 'Other', value: 'other' },
+  { label: 'Prefer not to say', value: 'prefer_not_to_say' },
+];
 
 export default function RegisterScreen() {
   const { theme } = useAppTheme();
@@ -21,10 +30,12 @@ const styles = createStyles(theme);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [gender, setGender] = useState<GenderValue | null>(null);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ kind: 'error' | 'success'; msg: string } | null>(null);
+  const [showSuccess, setShowSuccess] = useState<null | { email: string; hasSession: boolean }>(null);
 
   const { role } = useLocalSearchParams<{ role?: string }>();
 
@@ -63,6 +74,10 @@ const handleRegister = async () => {
     notify('Password mismatch', 'Both passwords must match.');
     return;
   }
+  if (!gender) {
+    notify('Gender required', 'Please select a gender option.');
+    return;
+  }
 
   setSubmitting(true);
   try {
@@ -73,33 +88,32 @@ const handleRegister = async () => {
         data: {
           full_name: name.trim(),
           phone: phone.trim(),
+          gender,
           requested_role: role ?? 'member',
         },
       },
     });
     if (error) {
       const m = error.message || '';
-      // Make Supabase's cryptic rate-limit error actionable.
       const friendly = /rate limit|over_email_send/i.test(m)
-        ? 'Too many signup attempts right now (Supabase email rate limit). Please wait a few minutes and try again.'
+        ? 'Too many signup attempts right now. Please wait a few minutes and try again.'
         : m;
       notify('Sign-up failed', friendly);
       return;
     }
 
-    // If email confirmation is OFF, user comes back with a session already.
-    if (data.session) {
-      notify('Account created', 'Signing you in...', 'success');
-      router.replace({ pathname: '/(auth)/login', params: { role: role ?? 'member' } });
-      return;
-    }
-    notify('Account created', 'Check your email to confirm, then sign in.', 'success');
-    router.replace({ pathname: '/(auth)/login', params: { role: role ?? 'member' } });
+    setShowSuccess({ email: email.trim(), hasSession: !!data.session });
   } catch (e) {
     notify('Unexpected error', (e as Error).message ?? 'Please try again.');
   } finally {
     setSubmitting(false);
   }
+};
+
+const onSuccessDismiss = () => {
+  const r = role ?? 'member';
+  setShowSuccess(null);
+  router.replace({ pathname: '/(auth)/login', params: { role: r } });
 };
 
 
@@ -181,6 +195,27 @@ const handleRegister = async () => {
           secureTextEntry
         />
 
+        <Text style={styles.label}>Gender</Text>
+        <View style={styles.genderRow}>
+          {GENDERS.map((g) => {
+            const active = gender === g.value;
+            return (
+              <Pressable
+                key={g.value}
+                onPress={() => setGender(g.value)}
+                style={[
+                  styles.genderChip,
+                  { borderColor: active ? theme.primary : theme.border, backgroundColor: active ? theme.primary : theme.card },
+                ]}
+              >
+                <Text style={{ color: active ? theme.background : theme.text, fontSize: 13, fontWeight: '600' }}>
+                  {g.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
         {feedback && (
           <View style={[styles.feedback, feedback.kind === 'error' ? styles.feedbackError : styles.feedbackSuccess]}>
             <Text style={styles.feedbackText}>{feedback.msg}</Text>
@@ -219,6 +254,35 @@ const handleRegister = async () => {
       <Text style={styles.footer}>
         YOUR FITNESS JOURNEY STARTS HERE
       </Text>
+
+      <Modal
+        visible={!!showSuccess}
+        transparent
+        animationType="fade"
+        onRequestClose={onSuccessDismiss}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={[styles.modalCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <Text style={styles.modalEmoji}>📧</Text>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>
+              {showSuccess?.hasSession ? 'Account created!' : 'Check your email'}
+            </Text>
+            <Text style={[styles.modalBody, { color: theme.secondaryText }]}>
+              {showSuccess?.hasSession
+                ? 'You can now sign in with your credentials.'
+                : `We sent a confirmation link to:\n\n${showSuccess?.email}\n\nClick it, then return and sign in.`}
+            </Text>
+            <Pressable
+              style={[styles.modalButton, { backgroundColor: theme.primary }]}
+              onPress={onSuccessDismiss}
+            >
+              <Text style={[styles.modalButtonText, { color: theme.background }]}>
+                Go to login
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -363,6 +427,60 @@ function createStyles(theme: (typeof Colors)['light']) {
       color: theme.text,
       fontSize: 13,
       lineHeight: 18,
+    },
+    genderRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginTop: 4,
+    },
+    genderChip: {
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: 10,
+      borderWidth: 1,
+    },
+    modalBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 24,
+    },
+    modalCard: {
+      width: '100%',
+      maxWidth: 420,
+      padding: 28,
+      borderRadius: 18,
+      borderWidth: 1,
+      alignItems: 'center',
+    },
+    modalEmoji: {
+      fontSize: 48,
+      marginBottom: 12,
+    },
+    modalTitle: {
+      fontSize: 20,
+      fontWeight: '800',
+      marginBottom: 12,
+      textAlign: 'center',
+    },
+    modalBody: {
+      fontSize: 14,
+      lineHeight: 21,
+      textAlign: 'center',
+      marginBottom: 22,
+    },
+    modalButton: {
+      paddingHorizontal: 26,
+      paddingVertical: 13,
+      borderRadius: 11,
+      alignSelf: 'stretch',
+      alignItems: 'center',
+    },
+    modalButtonText: {
+      fontSize: 14,
+      fontWeight: '800',
     },
   });
 }

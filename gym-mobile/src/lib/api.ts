@@ -75,12 +75,15 @@ export const Api = {
 
 export type Role = 'member' | 'admin' | 'super_admin';
 
+export type Gender = 'male' | 'female' | 'other' | 'prefer_not_to_say';
+
 export interface Profile {
   id: string;
   email?: string | null;
   full_name?: string | null;
   phone?: string | null;
   avatar_url?: string | null;
+  gender?: Gender | null;
   role: Role;
   gym_id?: string | null;
 }

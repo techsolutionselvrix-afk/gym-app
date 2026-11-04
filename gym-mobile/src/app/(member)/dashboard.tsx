@@ -1,4 +1,5 @@
 
+import { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -14,9 +15,35 @@ import { Colors } from '@/constants/theme';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/context/ThemeContext';
+import { Api, Profile } from '@/lib/api';
+
+const prettyGender = (g?: string | null) => {
+  if (!g) return '—';
+  if (g === 'prefer_not_to_say') return 'Prefer not to say';
+  return g.charAt(0).toUpperCase() + g.slice(1);
+};
+
+const firstName = (full?: string | null, email?: string | null) => {
+  const n = (full ?? '').trim();
+  if (n) return n.split(/\s+/)[0];
+  if (email) return email.split('@')[0];
+  return 'there';
+};
 
 export default function MemberDashboard() {
   const { theme, themeMode } = useAppTheme();
+  const [profile, setProfile] = useState<Profile | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    Api.me()
+      .then((p) => { if (active) setProfile(p); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  const name = firstName(profile?.full_name, profile?.email);
+  const initial = name.charAt(0).toUpperCase();
 
   const stats = [
     { label: 'Attendance', value: '12', icon: '📅' },
@@ -42,11 +69,16 @@ export default function MemberDashboard() {
               GYMSYNC
             </Text>
             <Text style={[styles.greeting, { color: theme.text }]}>
-              Hello, Arpita! 👋
+              Hello, {name}! 👋
             </Text>
             <Text style={[styles.subtitle, { color: theme.secondaryText }]}>
               Ready for today's workout?
             </Text>
+            {profile?.gender && (
+              <Text style={[styles.subtitle, { color: theme.secondaryText, marginTop: 2, fontSize: 12 }]}>
+                Gender: {prettyGender(profile.gender)}
+              </Text>
+            )}
           </View>
 
          <Pressable
@@ -77,7 +109,7 @@ export default function MemberDashboard() {
             onPress={() => router.push('/(member)/membership')}
           >
             <Text style={[styles.profileText, { color: theme.primary }]}>
-              A
+              {initial}
             </Text>
           </Pressable>
         </View>
