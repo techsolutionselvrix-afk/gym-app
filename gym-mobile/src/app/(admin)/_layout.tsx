@@ -1,16 +1,28 @@
 import { Tabs, useRouter, usePathname } from 'expo-router';
 import {
   StyleSheet,
+  View,
+  ActivityIndicator,
 } from 'react-native';
 import { useAppTheme } from '@/context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRoleGuard } from '@/lib/useRoleGuard';
 
 export default function OwnerTabLayout() {
   const { theme } = useAppTheme();
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  const guard = useRoleGuard('admin');
+
+  if (guard !== 'authorized') {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.background }}>
+        <ActivityIndicator color={theme.primary} />
+      </View>
+    );
+  }
 
   const items = [
     {

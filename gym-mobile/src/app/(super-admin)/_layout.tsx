@@ -4,16 +4,27 @@ import {
   Text,
   Pressable,
   StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/context/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRoleGuard } from '@/lib/useRoleGuard';
 
 export default function SuperAdminLayout() {
   const { theme, themeMode } = useAppTheme();
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  const guard = useRoleGuard('super_admin');
+
+  if (guard !== 'authorized') {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.background }}>
+        <ActivityIndicator color={theme.primary} />
+      </View>
+    );
+  }
 
   const items = [
     {

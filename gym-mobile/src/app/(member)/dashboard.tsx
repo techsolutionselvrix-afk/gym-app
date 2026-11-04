@@ -8,7 +8,8 @@ import {
   StyleSheet,
   useColorScheme,
   StatusBar,
-  Alert
+  Alert,
+  Modal,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Colors } from '@/constants/theme';
@@ -44,6 +45,7 @@ export default function MemberDashboard() {
 
   const name = firstName(profile?.full_name, profile?.email);
   const initial = name.charAt(0).toUpperCase();
+  const [notifOpen, setNotifOpen] = useState(false);
 
   const stats = [
     { label: 'Attendance', value: '12', icon: '📅' },
@@ -81,37 +83,29 @@ export default function MemberDashboard() {
             )}
           </View>
 
-         <Pressable
-  style={[
-    styles.notificationButton,
-    {
-      backgroundColor: theme.card,
-      borderWidth: 1,
-      borderColor: theme.border,
-    },
-  ]}
-  // onPress={() => router.push('/settings/notifications')}
-  accessibilityLabel="Notifications"
->
-  <Ionicons
-    name="notifications-outline"
-    size={24}
-    color={theme.text}
-  />
-  <View style={styles.notificationDot} />
-</Pressable>
+          <View style={styles.headerActions}>
+            <Pressable
+              style={[
+                styles.notificationButton,
+                { backgroundColor: theme.card, borderWidth: 1, borderColor: theme.border },
+              ]}
+              onPress={() => setNotifOpen(true)}
+              accessibilityLabel="Notifications"
+            >
+              <Ionicons name="notifications-outline" size={24} color={theme.text} />
+              <View style={styles.notificationDot} />
+            </Pressable>
 
-          <Pressable
-            style={[
-              styles.profile,
-              { backgroundColor: theme.inputBackground },
-            ]}
-            onPress={() => router.push('/(member)/membership')}
-          >
-            <Text style={[styles.profileText, { color: theme.primary }]}>
-              {initial}
-            </Text>
-          </Pressable>
+            <Pressable
+              style={[styles.profile, { backgroundColor: theme.inputBackground }]}
+              onPress={() => router.push('/(member)/profile')}
+              accessibilityLabel="Profile"
+            >
+              <Text style={[styles.profileText, { color: theme.primary }]}>
+                {initial}
+              </Text>
+            </Pressable>
+          </View>
         </View>
 
         {/* Membership badge */}
@@ -227,8 +221,25 @@ export default function MemberDashboard() {
         </Text>
       </ScrollView>
 
-      {/* Bottom Navigation */}
-     
+      <Modal visible={notifOpen} transparent animationType="fade" onRequestClose={() => setNotifOpen(false)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 24 }}>
+          <View style={{ backgroundColor: theme.card, borderColor: theme.border, borderWidth: 1, borderRadius: 18, padding: 24 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+              <Ionicons name="notifications-outline" size={22} color={theme.text} />
+              <Text style={{ color: theme.text, fontSize: 18, fontWeight: '800' }}>Notifications</Text>
+            </View>
+            <Text style={{ color: theme.secondaryText, fontSize: 14, lineHeight: 20, marginBottom: 20 }}>
+              You're all caught up. We'll let you know when there's something new.
+            </Text>
+            <Pressable
+              onPress={() => setNotifOpen(false)}
+              style={{ backgroundColor: theme.primary, borderRadius: 11, paddingVertical: 12, alignItems: 'center' }}
+            >
+              <Text style={{ color: theme.background, fontWeight: '800' }}>Close</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
     </SafeAreaView>
   );
@@ -247,6 +258,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 24,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   brand: {
     fontSize: 14,
