@@ -4,7 +4,6 @@ Text,
 StyleSheet,
 ScrollView,
 Pressable,
-Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/context/ThemeContext';
@@ -12,40 +11,53 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { signOutWithConfirm } from '@/lib/auth';
 
-const comingSoon = (name: string) =>
-  Alert.alert(name, 'This section is not available yet.');
+type MenuItem = {
+  title: string;
+  subtitle: string;
+  icon: 'nutrition-outline' | 'alert-circle-outline' | 'color-palette-outline' | 'card-outline' | 'person-outline';
+  onPress: () => void;
+};
 
-const menuItems = [
-{
-title: 'Diet Plans',
-subtitle: 'Create and manage diet plans',
-icon: 'nutrition-outline' as const,
-route: '/(admin)/diet-plans',
-},
-{
-title: 'Red List',
-subtitle: 'View members requiring attention',
-icon: 'alert-circle-outline' as const,
-route: '/(admin)/red-list',
-},
-{
-title: 'Customization',
-subtitle: 'Customize your gym experience',
-icon: 'color-palette-outline' as const,
-route: '/(admin)/customization',
-},
-{
-title: 'Subscription',
-subtitle: 'Manage your subscription plan',
-icon: 'card-outline' as const,
-route: '/(admin)/subscription',
-},
-{
-title: 'Profile',
-subtitle: 'Manage your personal information',
-icon: 'person-outline' as const,
-route: '/(admin)/profile',
-},
+const menuItems: MenuItem[] = [
+  {
+    title: 'Diet Plans',
+    subtitle: 'Create and manage diet plans',
+    icon: 'nutrition-outline',
+    onPress: () => router.push({
+      pathname: '/(admin)/coming-soon' as any,
+      params: { feature: 'Diet Plans', icon: 'nutrition-outline' },
+    }),
+  },
+  {
+    title: 'Red List',
+    subtitle: 'View members requiring attention',
+    icon: 'alert-circle-outline',
+    onPress: () => router.push('/(admin)/members' as any),
+  },
+  {
+    title: 'Customization',
+    subtitle: 'Customize your gym experience',
+    icon: 'color-palette-outline',
+    onPress: () => router.push({
+      pathname: '/(admin)/coming-soon' as any,
+      params: { feature: 'Customization', icon: 'color-palette-outline' },
+    }),
+  },
+  {
+    title: 'Subscription',
+    subtitle: 'Manage your subscription plan',
+    icon: 'card-outline',
+    onPress: () => router.push({
+      pathname: '/(admin)/coming-soon' as any,
+      params: { feature: 'Subscription', icon: 'card-outline' },
+    }),
+  },
+  {
+    title: 'Profile',
+    subtitle: 'Manage your personal information',
+    icon: 'person-outline',
+    onPress: () => router.push('/(admin)/profile' as any),
+  },
 ];
 
 export default function MoreScreen() {
@@ -94,7 +106,7 @@ Manage your gym and account </Text> </View>
       {menuItems.map((item, index) => (
         <Pressable
           key={item.title}
-          onPress={() => comingSoon(item.title)}
+          onPress={item.onPress}
           style={[
             styles.menuItem,
             index !== menuItems.length - 1 && {

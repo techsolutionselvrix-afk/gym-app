@@ -125,6 +125,9 @@ export default function OwnerTabLayout() {
       ),
     }}
   />
+
+  <Tabs.Screen name="profile" options={{ href: null }} />
+  <Tabs.Screen name="coming-soon" options={{ href: null }} />
 </Tabs>
   );
 }

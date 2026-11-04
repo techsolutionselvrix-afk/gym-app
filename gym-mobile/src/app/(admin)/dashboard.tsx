@@ -99,8 +99,8 @@ export default function OwnerDashboard() {
                   styles.profile,
                   { backgroundColor: theme.inputBackground },
                 ]}
-                onPress={() => router.push('/(admin)/more' as any)}
-                accessibilityLabel="Admin menu"
+                onPress={() => router.push('/(admin)/profile' as any)}
+                accessibilityLabel="Profile"
               >
                 <Ionicons
                   name="person-outline"
