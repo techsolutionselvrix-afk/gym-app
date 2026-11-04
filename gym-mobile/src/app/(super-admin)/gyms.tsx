@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -13,9 +13,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/context/ThemeContext';
+import { Api, ApiError, Gym as ApiGym } from '@/lib/api';
 
 type Gym = {
-  id: number;
+  id: string;
   name: string;
   owner: string;
   email: string;
@@ -25,6 +26,18 @@ type Gym = {
   status: 'Active' | 'Disabled';
   subscription: 'Paid' | 'Pending';
 };
+
+const fromApi = (g: ApiGym): Gym => ({
+  id: g.id,
+  name: g.name,
+  owner: g.email ?? '',
+  email: g.email ?? '',
+  phone: g.phone ?? '',
+  location: g.address ?? '',
+  plan: g.status === 'active' ? 'Active plan' : 'Trial',
+  status: g.status === 'suspended' ? 'Disabled' : 'Active',
+  subscription: g.status === 'active' ? 'Paid' : 'Pending',
+});
 
 export default function GymsScreen() {
   const { theme } = useAppTheme();
@@ -40,52 +53,15 @@ export default function GymsScreen() {
   const [phone, setPhone] = useState('');
   const [location, setLocation] = useState('');
 
-  const [gyms, setGyms] = useState<Gym[]>([
-    {
-      id: 1,
-      name: 'Fitness Hub',
-      owner: 'Rahul Sharma',
-      email: 'rahul@example.com',
-      phone: '9876543210',
-      location: 'Bhopal, MP',
-      plan: 'Premium',
-      status: 'Active',
-      subscription: 'Paid',
-    },
-    {
-      id: 2,
-      name: 'Power Zone Gym',
-      owner: 'Amit Verma',
-      email: 'amit@example.com',
-      phone: '9876543211',
-      location: 'Indore, MP',
-      plan: 'Pro',
-      status: 'Active',
-      subscription: 'Paid',
-    },
-    {
-      id: 3,
-      name: 'Fit Life Studio',
-      owner: 'Priya Patel',
-      email: 'priya@example.com',
-      phone: '9876543212',
-      location: 'Nagpur, MH',
-      plan: 'Basic',
-      status: 'Disabled',
-      subscription: 'Pending',
-    },
-    {
-      id: 4,
-      name: 'Iron Paradise',
-      owner: 'Rohit Singh',
-      email: 'rohit@example.com',
-      phone: '9876543213',
-      location: 'Raipur, CG',
-      plan: 'Pro',
-      status: 'Active',
-      subscription: 'Paid',
-    },
-  ]);
+  const [gyms, setGyms] = useState<Gym[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    Api.listGyms()
+      .then((rows) => { if (active) setGyms(rows.map(fromApi)); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   const totalGyms = gyms.length;
   const activeGyms = gyms.filter(gym => gym.status === 'Active').length;
@@ -103,7 +79,7 @@ export default function GymsScreen() {
     return matchesSearch && matchesFilter;
   });
 
-  const addGym = () => {
+  const addGym = async () => {
     if (
       !gymName.trim() ||
       !ownerName.trim() ||
@@ -114,42 +90,34 @@ export default function GymsScreen() {
       Alert.alert('Missing Details', 'Please fill all the fields.');
       return;
     }
-
-    const newGym: Gym = {
-      id: Date.now(),
-      name: gymName.trim(),
-      owner: ownerName.trim(),
-      email: email.trim(),
-      phone: phone.trim(),
-      location: location.trim(),
-      plan: 'Basic',
-      status: 'Active',
-      subscription: 'Pending',
-    };
-
-    setGyms(prev => [newGym, ...prev]);
-
-    setGymName('');
-    setOwnerName('');
-    setEmail('');
-    setPhone('');
-    setLocation('');
-    setModalVisible(false);
-
-    Alert.alert('Success', 'Gym added successfully.');
+    try {
+      const created = await Api.createGym({
+        name: gymName.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        address: location.trim(),
+      });
+      setGyms(prev => [fromApi(created), ...prev]);
+      setGymName(''); setOwnerName(''); setEmail(''); setPhone(''); setLocation('');
+      setModalVisible(false);
+      Alert.alert('Success', 'Gym added successfully.');
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : (e as Error).message;
+      Alert.alert('Could not add gym', msg || 'Please try again.');
+    }
   };
 
-  const toggleGymStatus = (id: number) => {
-    setGyms(prev =>
-      prev.map(gym =>
-        gym.id === id
-          ? {
-              ...gym,
-              status: gym.status === 'Active' ? 'Disabled' : 'Active',
-            }
-          : gym
-      )
-    );
+  const toggleGymStatus = async (id: string) => {
+    const current = gyms.find(g => g.id === id);
+    if (!current) return;
+    const nextStatus = current.status === 'Active' ? 'suspended' : 'active';
+    try {
+      const updated = await Api.updateGym(id, { status: nextStatus as any });
+      setGyms(prev => prev.map(g => g.id === id ? fromApi(updated) : g));
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : (e as Error).message;
+      Alert.alert('Could not update gym', msg || 'Please try again.');
+    }
   };
 
   const showGymActions = (gym: Gym) => {

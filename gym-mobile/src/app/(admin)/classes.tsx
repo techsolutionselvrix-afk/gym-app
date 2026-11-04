@@ -9,40 +9,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/context/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const classes = [
-{
-id: '1',
-name: 'Yoga',
-trainer: 'Trainer Name',
-time: '07:00 AM - 08:00 AM',
-icon: 'body-outline' as const,
-members: 12,
-},
-{
-id: '2',
-name: 'Zumba',
-trainer: 'Trainer Name',
-time: '09:00 AM - 10:00 AM',
-icon: 'musical-notes-outline' as const,
-members: 15,
-},
-{
-id: '3',
-name: 'Strength Training',
-trainer: 'Trainer Name',
-time: '05:00 PM - 06:00 PM',
-icon: 'barbell-outline' as const,
-members: 10,
-},
-{
-id: '4',
-name: 'Cardio',
-trainer: 'Trainer Name',
-time: '06:00 PM - 07:00 PM',
-icon: 'heart-outline' as const,
-members: 8,
-},
-];
+const classes: {
+  id: string; name: string; trainer: string; time: string;
+  icon: 'body-outline' | 'musical-notes-outline' | 'barbell-outline' | 'heart-outline';
+  members: number;
+}[] = [];
 
 export default function ClassesScreen() {
 const { theme } = useAppTheme();
@@ -86,6 +57,22 @@ Manage your gym classes </Text> </View>
     <Text style={[styles.sectionTitle, { color: theme.text }]}>
       All Classes
     </Text>
+
+    {classes.length === 0 && (
+      <View style={{
+        padding: 24, borderRadius: 14, borderWidth: 1,
+        borderColor: theme.border, backgroundColor: theme.card,
+        alignItems: 'center',
+      }}>
+        <Ionicons name="calendar-outline" size={36} color={theme.secondaryText} />
+        <Text style={{ color: theme.text, fontWeight: '700', fontSize: 15, marginTop: 10 }}>
+          No classes yet
+        </Text>
+        <Text style={{ color: theme.secondaryText, fontSize: 12, textAlign: 'center', marginTop: 6 }}>
+          Scheduled classes will appear here.
+        </Text>
+      </View>
+    )}
 
     {classes.map((item) => (
       <View

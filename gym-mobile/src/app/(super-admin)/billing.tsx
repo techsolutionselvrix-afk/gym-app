@@ -33,63 +33,7 @@ export default function BillingScreen() {
   const [filter, setFilter] = useState('All');
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
 
-  const [payments] = useState<Payment[]>([
-    {
-      id: 1,
-      transactionId: 'TXN100245',
-      gymName: 'Fitness Hub',
-      owner: 'Rahul Sharma',
-      plan: 'Premium',
-      amount: 3999,
-      date: '30 Oct 2026',
-      method: 'UPI',
-      status: 'Success',
-    },
-    {
-      id: 2,
-      transactionId: 'TXN100246',
-      gymName: 'Power Zone Gym',
-      owner: 'Amit Verma',
-      plan: 'Pro',
-      amount: 1999,
-      date: '29 Oct 2026',
-      method: 'Credit Card',
-      status: 'Success',
-    },
-    {
-      id: 3,
-      transactionId: 'TXN100247',
-      gymName: 'Fit Life Studio',
-      owner: 'Priya Patel',
-      plan: 'Basic',
-      amount: 999,
-      date: '28 Oct 2026',
-      method: 'UPI',
-      status: 'Pending',
-    },
-    {
-      id: 4,
-      transactionId: 'TXN100248',
-      gymName: 'Iron Paradise',
-      owner: 'Rohit Singh',
-      plan: 'Pro',
-      amount: 1999,
-      date: '27 Oct 2026',
-      method: 'Net Banking',
-      status: 'Failed',
-    },
-    {
-      id: 5,
-      transactionId: 'TXN100249',
-      gymName: 'Gold Fitness',
-      owner: 'Karan Mehta',
-      plan: 'Premium',
-      amount: 3999,
-      date: '26 Oct 2026',
-      method: 'UPI',
-      status: 'Success',
-    },
-  ]);
+  const [payments] = useState<Payment[]>([]);
 
   const successfulPayments = payments.filter(
     payment => payment.status === 'Success'

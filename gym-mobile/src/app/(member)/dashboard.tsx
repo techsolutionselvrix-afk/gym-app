@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import { Colors } from '@/constants/theme';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/context/ThemeContext';
-import { Api, Profile } from '@/lib/api';
+import { Api, Profile, Attendance } from '@/lib/api';
 
 const prettyGender = (g?: string | null) => {
   if (!g) return '—';
@@ -35,22 +35,47 @@ export default function MemberDashboard() {
   const { theme, themeMode } = useAppTheme();
   const [profile, setProfile] = useState<Profile | null>(null);
 
+  const [history, setHistory] = useState<Attendance[]>([]);
+  const [notifOpen, setNotifOpen] = useState(false);
+
   useEffect(() => {
     let active = true;
-    Api.me()
-      .then((p) => { if (active) setProfile(p); })
-      .catch(() => {});
+    Promise.all([Api.me().catch(() => null), Api.myAttendance().catch(() => [])])
+      .then(([p, a]) => {
+        if (!active) return;
+        if (p) setProfile(p);
+        setHistory(a ?? []);
+      });
     return () => { active = false; };
   }, []);
 
   const name = firstName(profile?.full_name, profile?.email);
   const initial = name.charAt(0).toUpperCase();
-  const [notifOpen, setNotifOpen] = useState(false);
+
+  const { attendance, workouts, streak } = useMemo(() => {
+    const now = new Date();
+    const monthKey = `${now.getFullYear()}-${now.getMonth()}`;
+    const monthly = history.filter(h => {
+      const d = new Date(h.checked_in_at);
+      return `${d.getFullYear()}-${d.getMonth()}` === monthKey;
+    });
+    // streak: count consecutive past days (including today) with at least one check-in
+    const daySet = new Set<string>(
+      history.map(h => new Date(h.checked_in_at).toDateString())
+    );
+    let s = 0;
+    const cursor = new Date(); cursor.setHours(0, 0, 0, 0);
+    while (daySet.has(cursor.toDateString())) {
+      s += 1;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    return { attendance: monthly.length, workouts: history.length, streak: s };
+  }, [history]);
 
   const stats = [
-    { label: 'Attendance', value: '12', icon: '📅' },
-    { label: 'Workouts', value: '08', icon: '💪' },
-    { label: 'Day Streak', value: '05', icon: '🔥' },
+    { label: 'This month', value: String(attendance).padStart(2, '0'), icon: '📅' },
+    { label: 'All time', value: String(workouts).padStart(2, '0'), icon: '💪' },
+    { label: 'Day Streak', value: String(streak).padStart(2, '0'), icon: '🔥' },
   ];
 
   return (

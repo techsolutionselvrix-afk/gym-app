@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -13,9 +13,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/context/ThemeContext';
+import { Api, ApiError, Plan as ApiPlan } from '@/lib/api';
 
 type Plan = {
-  id: number;
+  id: string;
   name: string;
   price: string;
   duration: string;
@@ -23,7 +24,22 @@ type Plan = {
   features: string[];
   active: boolean;
   popular?: boolean;
+  gym_id: string;
 };
+
+const fromApi = (p: ApiPlan): Plan => ({
+  id: p.id,
+  name: p.name,
+  price: String(Math.round(p.price_cents / 100)),
+  duration: p.duration_days === 30 ? 'Monthly'
+    : p.duration_days === 90 ? 'Quarterly'
+    : p.duration_days === 365 ? 'Yearly'
+    : `${p.duration_days} days`,
+  members: '—',
+  features: [],
+  active: p.active,
+  gym_id: p.gym_id,
+});
 
 export default function PlansScreen() {
   const { theme, themeMode } = useAppTheme();
@@ -33,89 +49,72 @@ export default function PlansScreen() {
   const [duration, setDuration] = useState('Monthly');
   const [maxMembers, setMaxMembers] = useState('');
 
-  const [plans, setPlans] = useState<Plan[]>([
-    {
-      id: 1,
-      name: 'Basic',
-      price: '999',
-      duration: 'Monthly',
-      members: '50',
-      features: [
-        'Member Management',
-        'Attendance Tracking',
-        'Basic Reports',
-      ],
-      active: true,
-    },
-    {
-      id: 2,
-      name: 'Pro',
-      price: '1999',
-      duration: 'Monthly',
-      members: '200',
-      features: [
-        'All Basic Features',
-        'Diet Plan Management',
-        'Advanced Reports',
-        'Class Management',
-      ],
-      active: true,
-      popular: true,
-    },
-    {
-      id: 3,
-      name: 'Premium',
-      price: '3999',
-      duration: 'Monthly',
-      members: 'Unlimited',
-      features: [
-        'All Pro Features',
-        'Multiple Trainers',
-        'Advanced Analytics',
-        'Priority Support',
-      ],
-      active: true,
-    },
-  ]);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [gymIds, setGymIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const [planRows, gymRows] = await Promise.all([
+          Api.listPlans(),
+          Api.listGyms(),
+        ]);
+        if (!active) return;
+        setPlans(planRows.map(fromApi));
+        setGymIds(gymRows.map(g => g.id));
+      } catch {}
+    })();
+    return () => { active = false; };
+  }, []);
 
   const activePlans = plans.filter(plan => plan.active).length;
 
-  const addPlan = () => {
-    if (!planName.trim() || !price.trim() || !maxMembers.trim()) {
-      Alert.alert('Missing Details', 'Please fill all the fields.');
+  const addPlan = async () => {
+    if (!planName.trim() || !price.trim()) {
+      Alert.alert('Missing Details', 'Please fill plan name and price.');
       return;
     }
-
-    if (Number(price) <= 0 || Number(maxMembers) <= 0) {
-      Alert.alert('Invalid Details', 'Enter valid price and member limit.');
+    if (Number(price) <= 0) {
+      Alert.alert('Invalid Details', 'Enter a valid price.');
       return;
     }
-
-    const newPlan: Plan = {
-      id: Date.now(),
-      name: planName.trim(),
-      price: price.trim(),
-      duration,
-      members: maxMembers.trim(),
-      features: ['Member Management', 'Attendance Tracking'],
-      active: true,
-    };
-
-    setPlans(prev => [...prev, newPlan]);
-
-    setPlanName('');
-    setPrice('');
-    setMaxMembers('');
-    setDuration('Monthly');
-    setModalVisible(false);
+    if (gymIds.length === 0) {
+      Alert.alert('No gyms yet', 'Create a gym first — plans belong to a gym.');
+      return;
+    }
+    const duration_days = duration === 'Monthly' ? 30
+      : duration === 'Quarterly' ? 90
+      : duration === 'Yearly' ? 365
+      : 30;
+    try {
+      const created = await Api.createPlan({
+        gym_id: gymIds[0],
+        name: planName.trim(),
+        price_cents: Math.round(Number(price) * 100),
+        duration_days,
+        currency: 'INR',
+        active: true,
+      } as any);
+      setPlans(prev => [...prev, fromApi(created)]);
+      setPlanName(''); setPrice(''); setMaxMembers(''); setDuration('Monthly');
+      setModalVisible(false);
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : (e as Error).message;
+      Alert.alert('Could not add plan', msg || 'Please try again.');
+    }
   };
 
-  const togglePlan = (id: number) => {
-    setPlans(prev =>
-      prev.map(plan =>
-        plan.id === id ? { ...plan, active: !plan.active } : plan
-      )
-    );
+  const togglePlan = async (id: string) => {
+    const current = plans.find(p => p.id === id);
+    if (!current) return;
+    try {
+      const updated = await Api.updatePlan(id, { active: !current.active } as any);
+      setPlans(prev => prev.map(p => p.id === id ? { ...fromApi(updated), features: p.features, popular: p.popular, members: p.members } : p));
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : (e as Error).message;
+      Alert.alert('Could not update plan', msg || 'Please try again.');
+    }
   };
 
   return (

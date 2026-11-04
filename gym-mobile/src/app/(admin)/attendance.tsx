@@ -6,23 +6,34 @@ ScrollView,
 TextInput,
 Pressable,
 } from 'react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/context/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Api } from '@/lib/api';
 
-const initialMembers = [
-{ id: '1', name: 'Rahul Sharma', time: '07:15 AM', status: 'Present' },
-{ id: '2', name: 'Priya Verma', time: '07:30 AM', status: 'Present' },
-{ id: '3', name: 'Amit Patel', time: '--', status: 'Absent' },
-{ id: '4', name: 'Sneha Gupta', time: '08:10 AM', status: 'Late' },
-{ id: '5', name: 'Rohit Singh', time: '--', status: 'Absent' },
-];
+type Row = { id: string; name: string; time: string; status: string };
 
 export default function AttendanceScreen() {
 const { theme } = useAppTheme();
 
-const [members, setMembers] = useState(initialMembers);
+const [members, setMembers] = useState<Row[]>([]);
+
+useEffect(() => {
+  let active = true;
+  Api.listMembers()
+    .then((rows) => {
+      if (!active) return;
+      setMembers(rows.map((m) => ({
+        id: m.id,
+        name: m.full_name || m.email || 'Unnamed',
+        time: '—',
+        status: 'Absent',
+      })));
+    })
+    .catch(() => {});
+  return () => { active = false; };
+}, []);
 const [search, setSearch] = useState('');
 
 const presentCount = members.filter(

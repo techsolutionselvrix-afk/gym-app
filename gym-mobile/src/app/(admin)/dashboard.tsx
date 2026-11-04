@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -11,63 +12,32 @@ import { router } from 'expo-router';
 import { useAppTheme } from '@/context/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { Api, Profile } from '@/lib/api';
 
 
 export default function OwnerDashboard() {
  const { theme, themeMode } = useAppTheme();
+ const [members, setMembers] = useState<Profile[]>([]);
+
+ useEffect(() => {
+    let active = true;
+    Api.listMembers().then((rows) => { if (active) setMembers(rows); }).catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   const stats = [
-    {
-      label: 'Total Members',
-      value: '248',
-      icon: 'people-outline',
-    },
-    {
-      label: "Today's Attendance",
-      value: '86',
-      icon: 'calendar-outline',
-    },
-    {
-      label: 'Pending Payments',
-      value: '12',
-      icon: 'wallet-outline',
-    },
-    {
-      label: 'Expiring Soon',
-      value: '08',
-      icon: 'time-outline',
-    },
+    { label: 'Total Members', value: String(members.length), icon: 'people-outline' },
+    { label: "Today's Attendance", value: '—', icon: 'calendar-outline' },
+    { label: 'Pending Payments', value: '—', icon: 'wallet-outline' },
+    { label: 'Expiring Soon', value: '—', icon: 'time-outline' },
   ] as const;
 
   const quickActions = [
-    {
-      title: 'Add Member',
-      icon: 'person-add-outline',
-      route: '/(owner)/members',
-    },
-    {
-      title: 'Check Attendance',
-      icon: 'clipboard-outline',
-      route: '/(owner)/attendance',
-    },
-    {
-      title: 'Create Diet Plan',
-      icon: 'nutrition-outline',
-      route: '/(owner)/diet-plans',
-    },
-    {
-      title: 'Schedule Class',
-      icon: 'calendar-outline',
-      route: '/(owner)/classes',
-    },
+    { title: 'View Members', icon: 'people-outline', route: '/(admin)/members' },
+    { title: 'Check Attendance', icon: 'clipboard-outline', route: '/(admin)/attendance' },
+    { title: 'Classes', icon: 'calendar-outline', route: '/(admin)/classes' },
+    { title: 'More', icon: 'ellipsis-horizontal-outline', route: '/(admin)/more' },
   ] as const;
-
-  console.log('Ionicons:', typeof Ionicons);
-console.log('SafeAreaView:', typeof SafeAreaView);
-console.log('View:', typeof View);
-console.log('Text:', typeof Text);
-console.log('Pressable:', typeof Pressable);
-console.log('ScrollView:', typeof ScrollView);
 
   return (
     <SafeAreaView
@@ -129,8 +99,8 @@ console.log('ScrollView:', typeof ScrollView);
                   styles.profile,
                   { backgroundColor: theme.inputBackground },
                 ]}
-                onPress={() => router.push('/(owner)/profile' as any)}
-                accessibilityLabel="Owner profile"
+                onPress={() => router.push('/(admin)/more' as any)}
+                accessibilityLabel="Admin menu"
               >
                 <Ionicons
                   name="person-outline"
@@ -264,7 +234,7 @@ console.log('ScrollView:', typeof ScrollView);
           >
             <Pressable
               style={styles.alertRow}
-              onPress={() => router.push('/(owner)/red-list' as any)}
+              onPress={() => router.push('/(admin)/members' as any)}
             >
               <View
                 style={[
@@ -307,7 +277,7 @@ console.log('ScrollView:', typeof ScrollView);
 
             <Pressable
               style={styles.alertRow}
-              onPress={() => router.push('/(owner)/red-list' as any)}
+              onPress={() => router.push('/(admin)/members' as any)}
             >
               <View
                 style={[
@@ -350,7 +320,7 @@ console.log('ScrollView:', typeof ScrollView);
 
             <Pressable
               style={styles.alertRow}
-              onPress={() => router.push('/(owner)/red-list' as any)}
+              onPress={() => router.push('/(admin)/members' as any)}
             >
               <View
                 style={[
@@ -392,12 +362,12 @@ console.log('ScrollView:', typeof ScrollView);
                 styles.viewAllButton,
                 { backgroundColor: theme.inputBackground },
               ]}
-              onPress={() => router.push('/(owner)/red-list' as any)}
+              onPress={() => router.push('/(admin)/members' as any)}
             >
               <Text
                 style={[styles.viewAllText, { color: theme.primary }]}
               >
-                View Full Red List
+                View All Members
               </Text>
 
               <Ionicons
@@ -441,7 +411,7 @@ console.log('ScrollView:', typeof ScrollView);
                 pressed && styles.pressed,
               ]}
               onPress={() =>
-                router.push('/(owner)/subscription' as any)
+                router.push('/(admin)/more' as any)
               }
             >
               <Text

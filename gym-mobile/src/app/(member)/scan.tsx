@@ -9,18 +9,41 @@ import {
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/context/ThemeContext';
+import { Api, ApiError } from '@/lib/api';
 
 export default function ScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [scanResult, setScanResult] = useState('');
+  const [checkIn, setCheckIn] = useState<{ status: 'idle' | 'loading' | 'ok' | 'error'; msg?: string }>({ status: 'idle' });
 
   const { theme, themeMode } = useAppTheme();
 
   useEffect(() => {
     setScanned(false);
     setScanResult('');
+    setCheckIn({ status: 'idle' });
   }, []);
+
+  const handleScanned = async (data: string) => {
+    setScanned(true);
+    setScanResult(data);
+    setCheckIn({ status: 'loading' });
+    // We expect the QR to encode the gym_id (uuid). Reject anything else.
+    const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const gymId = data.trim();
+    if (!uuidRe.test(gymId)) {
+      setCheckIn({ status: 'error', msg: 'That QR code does not look like a gym code.' });
+      return;
+    }
+    try {
+      await Api.checkIn(gymId);
+      setCheckIn({ status: 'ok', msg: 'Checked in. Have a great workout!' });
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : (e as Error).message;
+      setCheckIn({ status: 'error', msg: msg || 'Check-in failed.' });
+    }
+  };
 
   if (!permission) {
     return (
@@ -76,10 +99,7 @@ export default function ScanScreen() {
   onBarcodeScanned={
     scanned
       ? undefined
-      : ({ data }) => {
-          setScanned(true);
-          setScanResult(data);
-        }
+      : ({ data }) => { void handleScanned(data); }
   }
 />
         <View pointerEvents="none" style={styles.overlay}>
@@ -92,15 +112,22 @@ export default function ScanScreen() {
 
       {scanResult ? (
         <View style={styles.resultCard}>
-          <Ionicons
-            name="checkmark-circle"
-            size={26}
-            color="#16A34A"
-          />
-
+          {checkIn.status === 'loading' && <ActivityIndicator size="small" />}
+          {checkIn.status === 'ok' && (
+            <Ionicons name="checkmark-circle" size={26} color="#16A34A" />
+          )}
+          {checkIn.status === 'error' && (
+            <Ionicons name="close-circle" size={26} color="#DC4545" />
+          )}
           <View style={styles.resultContent}>
-            <Text style={styles.resultTitle}>QR Code Scanned!</Text>
-            <Text style={styles.resultText}>{scanResult}</Text>
+            <Text style={styles.resultTitle}>
+              {checkIn.status === 'loading' && 'Checking in...'}
+              {checkIn.status === 'ok' && 'Checked in'}
+              {checkIn.status === 'error' && 'Check-in failed'}
+            </Text>
+            <Text style={styles.resultText}>
+              {checkIn.msg ?? scanResult}
+            </Text>
           </View>
         </View>
       ) : (

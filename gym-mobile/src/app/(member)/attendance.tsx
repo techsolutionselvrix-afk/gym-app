@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
 import { useAppTheme } from '@/context/ThemeContext';
+import { Api, Attendance } from '@/lib/api';
 
 type AttendanceStatus = 'Present' | 'Absent' | 'Rest Day';
 
@@ -19,63 +20,55 @@ type AttendanceRecord = {
   status: AttendanceStatus;
   checkIn?: string;
   duration?: string;
+  _rawDate?: Date;
+};
+
+const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+const fmtTime = (d: Date) =>
+  d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+
+const formatDuration = (ms: number) => {
+  const minutes = Math.floor(ms / 60000);
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return h ? `${h}h ${m}m` : `${m}m`;
+};
+
+const toRecord = (a: Attendance): AttendanceRecord => {
+  const inAt = new Date(a.checked_in_at);
+  const outAt = a.checked_out_at ? new Date(a.checked_out_at) : null;
+  return {
+    date: inAt.toLocaleDateString(undefined, { day: '2-digit', month: 'short' }),
+    day: DAY_NAMES[inAt.getDay()],
+    status: 'Present',
+    checkIn: fmtTime(inAt),
+    duration: outAt ? formatDuration(outAt.getTime() - inAt.getTime()) : 'Open',
+    _rawDate: inAt,
+  };
 };
 
 export default function AttendanceScreen() {
   const { theme } = useAppTheme();
   const [selectedFilter, setSelectedFilter] = useState('All');
-
   const [selectedMonth, setSelectedMonth] = useState(new Date());
+  const [rows, setRows] = useState<Attendance[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    Api.myAttendance()
+      .then((r) => { if (active) setRows(r); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   const today = new Date();
+  const monthName = selectedMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-  const monthName = selectedMonth.toLocaleDateString('en-US', {
-    month: 'long',
-    year: 'numeric',
-  });
-
-  // Sample attendance records for UI preview.
-  // Real attendance data can be connected to your backend later.
-  const attendanceRecords: AttendanceRecord[] = [
-    {
-      date: '28 Oct',
-      day: 'Wednesday',
-      status: 'Present',
-      checkIn: '07:15 AM',
-      duration: '1h 20m',
-    },
-    {
-      date: '27 Oct',
-      day: 'Tuesday',
-      status: 'Present',
-      checkIn: '07:30 AM',
-      duration: '1h 10m',
-    },
-    {
-      date: '26 Oct',
-      day: 'Monday',
-      status: 'Absent',
-    },
-    {
-      date: '25 Oct',
-      day: 'Sunday',
-      status: 'Rest Day',
-    },
-    {
-      date: '24 Oct',
-      day: 'Saturday',
-      status: 'Present',
-      checkIn: '08:00 AM',
-      duration: '1h 30m',
-    },
-    {
-      date: '23 Oct',
-      day: 'Friday',
-      status: 'Present',
-      checkIn: '07:20 AM',
-      duration: '1h 15m',
-    },
-  ];
+  const attendanceRecords: AttendanceRecord[] = useMemo(
+    () => rows.map(toRecord),
+    [rows],
+  );
 
   const filteredRecords =
     selectedFilter === 'All'
@@ -111,9 +104,16 @@ export default function AttendanceScreen() {
     ];
   })();
 
-  // Sample calendar dates for demonstration.
-  const presentDays = [2, 3, 5, 6, 9, 10, 12, 14, 16, 17, 20, 21, 23, 24, 27];
-  const absentDays = [8, 15, 26];
+  const presentDays = useMemo(() => {
+    const y = selectedMonth.getFullYear(), m = selectedMonth.getMonth();
+    const set = new Set<number>();
+    for (const r of rows) {
+      const d = new Date(r.checked_in_at);
+      if (d.getFullYear() === y && d.getMonth() === m) set.add(d.getDate());
+    }
+    return Array.from(set);
+  }, [rows, selectedMonth]);
+  const absentDays: number[] = [];
 
   const styles = createStyles(theme);
 

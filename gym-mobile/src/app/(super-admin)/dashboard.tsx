@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -11,69 +12,40 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAppTheme } from '@/context/ThemeContext';
+import { Api, Gym } from '@/lib/api';
 
 export default function SuperAdminDashboard() {
   const { theme, themeMode } = useAppTheme();
+  const [gyms, setGyms] = useState<Gym[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    Api.listGyms()
+      .then((rows) => { if (active) setGyms(rows); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  const total = gyms.length;
+  const active = gyms.filter((g) => g.status === 'active').length;
+  const trial = gyms.filter((g) => g.status === 'trial').length;
+  const suspended = gyms.filter((g) => g.status === 'suspended').length;
+  const fmtDate = (s?: string | null) =>
+    s ? new Date(s).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
   const stats = [
-    {
-      title: 'Total Gyms',
-      value: '125',
-      icon: 'business-outline' as const,
-      color: '#6366F1',
-    },
-    {
-      title: 'Active Gyms',
-      value: '110',
-      icon: 'checkmark-circle-outline' as const,
-      color: '#16A34A',
-    },
-    {
-      title: 'Disabled Gyms',
-      value: '15',
-      icon: 'ban-outline' as const,
-      color: '#EF4444',
-    },
-    {
-      title: 'Total Members',
-      value: '12,450',
-      icon: 'people-outline' as const,
-      color: '#0EA5E9',
-    },
-    {
-      title: 'Total Revenue',
-      value: '₹2.5L',
-      icon: 'wallet-outline' as const,
-      color: '#D97706',
-    },
-    {
-      title: 'Subscriptions',
-      value: '110',
-      icon: 'card-outline' as const,
-      color: '#9333EA',
-    },
+    { title: 'Total Gyms', value: String(total), icon: 'business-outline' as const, color: '#6366F1' },
+    { title: 'Active Gyms', value: String(active), icon: 'checkmark-circle-outline' as const, color: '#16A34A' },
+    { title: 'Trial Gyms', value: String(trial), icon: 'time-outline' as const, color: '#D97706' },
+    { title: 'Suspended', value: String(suspended), icon: 'ban-outline' as const, color: '#EF4444' },
   ];
 
-  const recentGyms = [
-    {
-      name: 'Fitness Hub',
-      owner: 'Rahul Sharma',
-      status: 'Active',
-      date: '30 Oct 2026',
-    },
-    {
-      name: 'Power Zone Gym',
-      owner: 'Amit Verma',
-      status: 'Active',
-      date: '29 Oct 2026',
-    },
-    {
-      name: 'Fit Life Studio',
-      owner: 'Priya Patel',
-      status: 'Pending',
-      date: '28 Oct 2026',
-    },
-  ];
+  const recentGyms = gyms.slice(0, 5).map((g: any) => ({
+    name: g.name,
+    owner: g.email ?? '—',
+    status: g.status === 'active' ? 'Active' : g.status === 'trial' ? 'Trial' : 'Suspended',
+    date: fmtDate(g.created_at),
+  }));
 
   const quickActions = [
     {

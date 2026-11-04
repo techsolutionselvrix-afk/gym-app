@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -13,12 +13,33 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
 import { useAppTheme } from '@/context/ThemeContext';
+import { Api, Profile } from '@/lib/api';
+import { signOutWithConfirm } from '@/lib/auth';
+
+const prettyGender = (g?: string | null) => {
+  if (!g) return '—';
+  if (g === 'prefer_not_to_say') return 'Prefer not to say';
+  return g.charAt(0).toUpperCase() + g.slice(1);
+};
 
 export default function ProfileScreen() {
   const { theme, themeMode } = useAppTheme();
   const styles = createStyles(theme);
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [profile, setProfile] = useState<Profile | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    Api.me()
+      .then((p) => { if (active) setProfile(p); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  const memberSinceYear = profile?.created_at
+    ? new Date(profile.created_at).getFullYear().toString()
+    : '—';
 
   const showComingSoon = (feature: string) => {
     Alert.alert(feature, 'This feature will be available soon.');
@@ -95,8 +116,8 @@ export default function ProfileScreen() {
             <Ionicons name="person" size={43} color={theme.primary} />
           </View>
 
-          <Text style={styles.name}>Gym Member</Text>
-          <Text style={styles.email}>member@gymsync.com</Text>
+          <Text style={styles.name}>{profile?.full_name || 'Member'}</Text>
+          <Text style={styles.email}>{profile?.email || '—'}</Text>
 
           <View style={styles.memberBadge}>
             <Ionicons name="checkmark-circle" size={15} color={theme.primary} />
@@ -113,21 +134,28 @@ export default function ProfileScreen() {
                 color={theme.secondaryText}
               />
               <Text style={styles.detailLabel}>Member since</Text>
-              <Text style={styles.detailValue}>2026</Text>
+              <Text style={styles.detailValue}>{memberSinceYear}</Text>
             </View>
 
             <View style={styles.verticalDivider} />
 
             <View style={styles.detailItem}>
               <Ionicons
-                name="fitness-outline"
+                name="person-outline"
                 size={18}
                 color={theme.secondaryText}
               />
-              <Text style={styles.detailLabel}>Workout goal</Text>
-              <Text style={styles.detailValue}>Stay Fit</Text>
+              <Text style={styles.detailLabel}>Gender</Text>
+              <Text style={styles.detailValue}>{prettyGender(profile?.gender)}</Text>
             </View>
           </View>
+
+          {profile?.phone && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14 }}>
+              <Ionicons name="call-outline" size={16} color={theme.secondaryText} />
+              <Text style={{ color: theme.secondaryText, fontSize: 13 }}>{profile.phone}</Text>
+            </View>
+          )}
         </View>
 
         {/* Membership Card */}
@@ -249,13 +277,7 @@ export default function ProfileScreen() {
         {/* Logout */}
         <Pressable
           style={styles.logoutButton}
-          onPress={() =>
-            Alert.alert(
-              'Log Out',
-              'Logout functionality will be connected to your authentication system.',
-              [{ text: 'OK' }],
-            )
-          }
+          onPress={signOutWithConfirm}
         >
           <Ionicons name="log-out-outline" size={21} color="#DC4545" />
           <Text style={styles.logoutText}>Log Out</Text>

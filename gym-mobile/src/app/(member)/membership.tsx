@@ -1,4 +1,5 @@
 
+import { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,39 +7,47 @@ import {
   ScrollView,
   Pressable,
   useColorScheme,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useAppTheme } from '@/context/ThemeContext';
+import { Api, Plan, Profile } from '@/lib/api';
 
-const plans = [
-  {
-    name: 'Monthly',
-    duration: '1 Month',
-    price: '₹999',
-    description: 'Perfect for getting started',
-    popular: false,
-  },
-  {
-    name: 'Quarterly',
-    duration: '3 Months',
-    price: '₹2,499',
-    description: 'Great for building consistency',
-    popular: true,
-  },
-  {
-    name: 'Yearly',
-    duration: '12 Months',
-    price: '₹7,999',
-    description: 'Best for long-term fitness',
-    popular: false,
-  },
-];
+const priceStr = (p: Plan) => {
+  const amount = (p.price_cents / 100).toLocaleString();
+  const sym = p.currency === 'INR' ? '₹' : p.currency + ' ';
+  return `${sym}${amount}`;
+};
+const durationLabel = (days: number) =>
+  days === 30 ? '1 Month' : days === 90 ? '3 Months' : days === 365 ? '12 Months' : `${days} days`;
+const perLabel = (days: number) =>
+  days === 30 ? 'per month' : days === 90 ? 'for 3 months' : days === 365 ? 'per year' : '';
 
 export default function MembershipScreen() {
   const { theme, themeMode } = useAppTheme();
   const styles = createStyles(theme);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    Promise.all([Api.me().catch(() => null), Api.listPlans().catch(() => [])])
+      .then(([p, pl]) => {
+        if (!active) return;
+        if (p) setProfile(p);
+        setPlans(pl ?? []);
+      })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
+
+  const memberSince = profile?.created_at
+    ? new Date(profile.created_at).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })
+    : '—';
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -65,13 +74,14 @@ export default function MembershipScreen() {
         <View style={styles.activeCard}>
           <View style={styles.activeTop}>
             <View>
-              <Text style={styles.activeLabel}>CURRENT MEMBERSHIP</Text>
-              <Text style={styles.activePlan}>Premium Plan</Text>
+              <Text style={styles.activeLabel}>ACCOUNT</Text>
+              <Text style={styles.activePlan}>{profile?.full_name || 'Member'}</Text>
             </View>
-
-            <View style={styles.activeBadge}>
-              <Text style={styles.activeBadgeText}>ACTIVE</Text>
-            </View>
+            {profile && (
+              <View style={styles.activeBadge}>
+                <Text style={styles.activeBadgeText}>ACTIVE</Text>
+              </View>
+            )}
           </View>
 
           <View style={styles.divider} />
@@ -79,22 +89,15 @@ export default function MembershipScreen() {
           <View style={styles.validityRow}>
             <View>
               <Text style={styles.detailLabel}>Member since</Text>
-              <Text style={styles.detailValue}>01 Oct 2026</Text>
+              <Text style={styles.detailValue}>{memberSince}</Text>
             </View>
-
             <View>
-              <Text style={styles.detailLabel}>Valid until</Text>
-              <Text style={styles.detailValue}>31 Oct 2026</Text>
+              <Text style={styles.detailLabel}>Plan</Text>
+              <Text style={styles.detailValue}>
+                {profile?.gym_id ? 'Assigned' : 'Not assigned yet'}
+              </Text>
             </View>
           </View>
-
-          <View style={styles.progressBackground}>
-            <View style={styles.progressFill} />
-          </View>
-
-          <Text style={styles.remainingText}>
-            Demo membership details · Update with your actual plan
-          </Text>
         </View>
 
         {/* Benefits */}
@@ -122,40 +125,28 @@ export default function MembershipScreen() {
           <Text style={styles.plansCaption}>Choose your duration</Text>
         </View>
 
+        {loading && <ActivityIndicator color={theme.primary} style={{ marginTop: 20 }} />}
+        {!loading && plans.length === 0 && (
+          <Text style={{ color: theme.secondaryText, textAlign: 'center', marginTop: 20 }}>
+            No plans available yet.
+          </Text>
+        )}
         {plans.map((plan) => (
-          <View
-            key={plan.name}
-            style={[
-              styles.planCard,
-              plan.popular && styles.popularPlan,
-            ]}
-          >
+          <View key={plan.id} style={styles.planCard}>
             <View style={styles.planInfo}>
               <View style={styles.planNameRow}>
                 <Text style={styles.planName}>{plan.name}</Text>
-
-                {plan.popular && (
-                  <View style={styles.popularBadge}>
-                    <Text style={styles.popularBadgeText}>POPULAR</Text>
-                  </View>
-                )}
               </View>
 
-              <Text style={styles.planDuration}>{plan.duration}</Text>
+              <Text style={styles.planDuration}>{durationLabel(plan.duration_days)}</Text>
               <Text style={styles.planDescription}>
-                {plan.description}
+                {plan.active ? 'Available now' : 'Currently paused'}
               </Text>
             </View>
 
             <View style={styles.priceContainer}>
-              <Text style={styles.planPrice}>{plan.price}</Text>
-              <Text style={styles.perMonth}>
-                {plan.name === 'Monthly'
-                  ? 'per month'
-                  : plan.name === 'Quarterly'
-                    ? 'for 3 months'
-                    : 'per year'}
-              </Text>
+              <Text style={styles.planPrice}>{priceStr(plan)}</Text>
+              <Text style={styles.perMonth}>{perLabel(plan.duration_days)}</Text>
             </View>
           </View>
         ))}

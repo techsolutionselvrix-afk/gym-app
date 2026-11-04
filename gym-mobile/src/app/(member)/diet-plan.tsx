@@ -14,36 +14,9 @@ import { Colors } from '@/constants/theme';
 import { router } from 'expo-router';
 import { useAppTheme } from '@/context/ThemeContext';
 
-const meals = [
-  {
-    time: '08:00 AM',
-    name: 'Breakfast',
-    food: 'Oats, banana & boiled eggs',
-    calories: 350,
-    emoji: '🍳',
-  },
-  {
-    time: '01:00 PM',
-    name: 'Lunch',
-    food: 'Roti, dal, paneer & salad',
-    calories: 500,
-    emoji: '🥗',
-  },
-  {
-    time: '04:30 PM',
-    name: 'Evening Snack',
-    food: 'Fruit & handful of almonds',
-    calories: 200,
-    emoji: '🍎',
-  },
-  {
-    time: '08:00 PM',
-    name: 'Dinner',
-    food: 'Rice, vegetables & dal',
-    calories: 400,
-    emoji: '🍲',
-  },
-];
+const meals: {
+  time: string; name: string; food: string; calories: number; emoji: string;
+}[] = [];
 
 export default function DietPlanScreen() {
   const { theme, themeMode } = useAppTheme();
@@ -93,10 +66,16 @@ export default function DietPlanScreen() {
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Today's Meals</Text>
-          <Text style={styles.mealCount}>4 meals</Text>
+          <Text style={styles.mealCount}>{meals.length} meals</Text>
         </View>
 
-        {meals.map((meal) => (
+        {meals.length === 0 ? (
+          <View style={[styles.mealCard, { justifyContent: 'center', paddingVertical: 24 }]}>
+            <Text style={{ color: theme.secondaryText, textAlign: 'center' }}>
+              No diet plan assigned yet.{'\n'}Your trainer will add one here.
+            </Text>
+          </View>
+        ) : meals.map((meal) => (
           <View style={styles.mealCard} key={meal.name}>
             <View style={styles.mealEmoji}>
               <Text style={styles.emoji}>{meal.emoji}</Text>

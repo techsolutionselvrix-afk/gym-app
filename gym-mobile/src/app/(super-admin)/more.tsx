@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAppTheme } from '@/context/ThemeContext';
+import { signOutWithConfirm } from '@/lib/auth';
 
 export default function SuperAdminMoreScreen() {
   const { theme, themeMode } = useAppTheme();
@@ -73,20 +74,7 @@ export default function SuperAdminMoreScreen() {
   ];
 
   const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: () => {
-            router.replace('/(auth)/login');
-          },
-        },
-      ]
-    );
+    signOutWithConfirm();
   };
 
   return (

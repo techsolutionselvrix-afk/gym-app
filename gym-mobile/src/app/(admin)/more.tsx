@@ -4,11 +4,16 @@ Text,
 StyleSheet,
 ScrollView,
 Pressable,
+Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/context/ThemeContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { signOutWithConfirm } from '@/lib/auth';
+
+const comingSoon = (name: string) =>
+  Alert.alert(name, 'This section is not available yet.');
 
 const menuItems = [
 {
@@ -89,7 +94,7 @@ Manage your gym and account </Text> </View>
       {menuItems.map((item, index) => (
         <Pressable
           key={item.title}
-          onPress={() => router.push(item.route as any)}
+          onPress={() => comingSoon(item.title)}
           style={[
             styles.menuItem,
             index !== menuItems.length - 1 && {
@@ -128,6 +133,18 @@ Manage your gym and account </Text> </View>
         </Pressable>
       ))}
     </View>
+
+    <Pressable
+      style={{
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+        gap: 10, marginHorizontal: 20, marginTop: 10, paddingVertical: 14,
+        borderRadius: 12, borderWidth: 1, borderColor: '#DC4545',
+      }}
+      onPress={signOutWithConfirm}
+    >
+      <Ionicons name="log-out-outline" size={20} color="#DC4545" />
+      <Text style={{ color: '#DC4545', fontWeight: '700', fontSize: 15 }}>Log Out</Text>
+    </Pressable>
 
     <Text style={[styles.version, { color: theme.secondaryText }]}>
       GymSync • Version 1.0.0

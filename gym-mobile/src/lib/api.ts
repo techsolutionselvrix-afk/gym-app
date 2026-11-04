@@ -65,9 +65,27 @@ function safeJson(s: string): unknown {
 export const Api = {
   me: () => api<Profile>('/me'),
   updateMe: (patch: Partial<Profile>) => api<Profile>('/me', { method: 'PATCH', body: patch }),
+
   listGyms: () => api<Gym[]>('/gyms'),
+  getGym: (id: string) => api<Gym>(`/gyms/${id}`),
+  createGym: (body: Partial<Gym>) => api<Gym>('/gyms', { method: 'POST', body }),
+  updateGym: (id: string, patch: Partial<Gym>) =>
+    api<Gym>(`/gyms/${id}`, { method: 'PATCH', body: patch }),
+
   listPlans: (gymId?: string) =>
     api<Plan[]>(`/plans${gymId ? `?gym_id=${encodeURIComponent(gymId)}` : ''}`),
+  createPlan: (body: Partial<Plan>) => api<Plan>('/plans', { method: 'POST', body }),
+  updatePlan: (id: string, patch: Partial<Plan>) =>
+    api<Plan>(`/plans/${id}`, { method: 'PATCH', body: patch }),
+
+  listMembers: (params?: { gym_id?: string; search?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.gym_id) q.set('gym_id', params.gym_id);
+    if (params?.search) q.set('search', params.search);
+    const qs = q.toString();
+    return api<Profile[]>(`/members${qs ? `?${qs}` : ''}`);
+  },
+
   checkIn: (gym_id: string) =>
     api<Attendance>('/attendance/check-in', { method: 'POST', body: { gym_id, method: 'qr' } }),
   myAttendance: () => api<Attendance[]>('/attendance/me'),
@@ -86,6 +104,8 @@ export interface Profile {
   gender?: Gender | null;
   role: Role;
   gym_id?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
 export interface Gym {
