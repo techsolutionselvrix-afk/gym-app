@@ -89,7 +89,50 @@ export const Api = {
   checkIn: (gym_id: string) =>
     api<Attendance>('/attendance/check-in', { method: 'POST', body: { gym_id, method: 'qr' } }),
   myAttendance: () => api<Attendance[]>('/attendance/me'),
+
+  myMemberships: () => api<MembershipRow[]>('/memberships/me'),
+  subscribe: (plan_id: string) =>
+    api<Membership>('/memberships', { method: 'POST', body: { plan_id } }),
+  listMemberships: (status: 'active' | 'expired' | 'all' = 'active') =>
+    api<MembershipRow[]>(`/memberships?status=${status}`),
+
+  getMyAppSubscription: () => api<AppSubscription>('/gyms/me/subscription'),
+  renewMyAppSubscription: (plan_id: string) =>
+    api<AppSubscription>('/gyms/me/subscription/renew', { method: 'POST', body: { plan_id } }),
 };
+
+export interface AppSubscriptionPlan {
+  id: string;
+  name: string;
+  days: number;
+  price_inr: number;
+}
+
+export interface AppSubscription {
+  gym_id: string;
+  ends_at: string | null;
+  days_remaining: number;
+  is_active: boolean;
+  plans: AppSubscriptionPlan[];
+}
+
+export interface Membership {
+  id: string;
+  member_id: string;
+  plan_id: string;
+  gym_id: string;
+  start_date: string;
+  end_date: string;
+  status: 'active' | 'expired' | 'paused' | 'cancelled';
+}
+
+export interface MembershipRow extends Membership {
+  plan_name?: string | null;
+  plan_price_cents?: number | null;
+  plan_currency?: string | null;
+  member_name?: string | null;
+  member_email?: string | null;
+}
 
 export type Role = 'member' | 'admin' | 'super_admin';
 

@@ -42,10 +42,10 @@ def get_current_user(authorization: str | None = Header(default=None)) -> Curren
         sb.table("profiles")
         .select("id, role, gym_id, email")
         .eq("id", user_id)
-        .maybe_single()
+        .limit(1)
         .execute()
     )
-    row = res.data
+    row = res.data[0] if res.data else None
 
     if not row:
         # Self-heal: pull metadata from auth.users and create the profile.

@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -8,12 +8,13 @@ import {
   Pressable,
   useColorScheme,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useAppTheme } from '@/context/ThemeContext';
-import { Api, Plan, Profile } from '@/lib/api';
+import { Api, ApiError, MembershipRow, Plan, Profile } from '@/lib/api';
 
 const priceStr = (p: Plan) => {
   const amount = (p.price_cents / 100).toLocaleString();
@@ -25,25 +26,59 @@ const durationLabel = (days: number) =>
 const perLabel = (days: number) =>
   days === 30 ? 'per month' : days === 90 ? 'for 3 months' : days === 365 ? 'per year' : '';
 
+const daysBetween = (end: string) => {
+  const ms = new Date(end + 'T23:59:59').getTime() - Date.now();
+  return Math.ceil(ms / 86_400_000);
+};
+const fmtDate = (s: string) =>
+  new Date(s).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
+
 export default function MembershipScreen() {
   const { theme, themeMode } = useAppTheme();
   const styles = createStyles(theme);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [memberships, setMemberships] = useState<MembershipRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [subscribingId, setSubscribingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    let active = true;
+  const load = useCallback(async () => {
     setLoading(true);
-    Promise.all([Api.me().catch(() => null), Api.listPlans().catch(() => [])])
-      .then(([p, pl]) => {
-        if (!active) return;
-        if (p) setProfile(p);
-        setPlans(pl ?? []);
-      })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
+    const [p, pl, ms] = await Promise.all([
+      Api.me().catch(() => null),
+      Api.listPlans().catch(() => [] as Plan[]),
+      Api.myMemberships().catch(() => [] as MembershipRow[]),
+    ]);
+    if (p) setProfile(p);
+    setPlans(pl ?? []);
+    setMemberships(ms ?? []);
+    setLoading(false);
   }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const active = memberships.find((m) => m.status === 'active');
+  const daysLeft = active ? daysBetween(active.end_date) : null;
+  const renewSoon = daysLeft !== null && daysLeft <= 10;
+
+  const subscribe = async (plan: Plan) => {
+    setSubscribingId(plan.id);
+    try {
+      await Api.subscribe(plan.id);
+      Alert.alert(
+        active ? 'Membership renewed' : 'Subscribed',
+        active
+          ? `Your plan is extended by ${durationLabel(plan.duration_days)}.`
+          : `Welcome! Your ${plan.name} plan starts today.`,
+      );
+      await load();
+    } catch (e) {
+      const msg = e instanceof ApiError ? e.message : (e as Error).message;
+      Alert.alert('Could not subscribe', msg || 'Please try again.');
+    } finally {
+      setSubscribingId(null);
+    }
+  };
 
   const memberSince = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })
@@ -73,30 +108,53 @@ export default function MembershipScreen() {
         {/* Current Membership */}
         <View style={styles.activeCard}>
           <View style={styles.activeTop}>
-            <View>
-              <Text style={styles.activeLabel}>ACCOUNT</Text>
-              <Text style={styles.activePlan}>{profile?.full_name || 'Member'}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.activeLabel}>CURRENT MEMBERSHIP</Text>
+              <Text style={styles.activePlan}>
+                {active?.plan_name || (profile?.gym_id ? 'No active plan' : 'No gym assigned')}
+              </Text>
             </View>
-            {profile && (
-              <View style={styles.activeBadge}>
-                <Text style={styles.activeBadgeText}>ACTIVE</Text>
-              </View>
-            )}
+            <View style={[styles.activeBadge, !active && { backgroundColor: 'rgba(220,60,60,0.12)' }]}>
+              <Text style={[styles.activeBadgeText, !active && { color: '#DC4545' }]}>
+                {active ? (renewSoon ? 'RENEW SOON' : 'ACTIVE') : 'INACTIVE'}
+              </Text>
+            </View>
           </View>
 
           <View style={styles.divider} />
 
           <View style={styles.validityRow}>
-            <View>
-              <Text style={styles.detailLabel}>Member since</Text>
-              <Text style={styles.detailValue}>{memberSince}</Text>
-            </View>
-            <View>
-              <Text style={styles.detailLabel}>Plan</Text>
-              <Text style={styles.detailValue}>
-                {profile?.gym_id ? 'Assigned' : 'Not assigned yet'}
-              </Text>
-            </View>
+            {active ? (
+              <>
+                <View>
+                  <Text style={styles.detailLabel}>Started</Text>
+                  <Text style={styles.detailValue}>{fmtDate(active.start_date)}</Text>
+                </View>
+                <View>
+                  <Text style={styles.detailLabel}>Valid until</Text>
+                  <Text style={styles.detailValue}>{fmtDate(active.end_date)}</Text>
+                </View>
+                <View>
+                  <Text style={styles.detailLabel}>Days left</Text>
+                  <Text style={[styles.detailValue, renewSoon && { color: '#DC4545' }]}>
+                    {Math.max(0, daysLeft ?? 0)}
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <>
+                <View>
+                  <Text style={styles.detailLabel}>Member since</Text>
+                  <Text style={styles.detailValue}>{memberSince}</Text>
+                </View>
+                <View>
+                  <Text style={styles.detailLabel}>Status</Text>
+                  <Text style={styles.detailValue}>
+                    {profile?.gym_id ? 'Pick a plan below' : 'Pick a plan below'}
+                  </Text>
+                </View>
+              </>
+            )}
           </View>
         </View>
 
@@ -121,35 +179,56 @@ export default function MembershipScreen() {
 
         {/* Plans */}
         <View style={styles.plansHeader}>
-          <Text style={styles.sectionTitle}>Explore Plans</Text>
-          <Text style={styles.plansCaption}>Choose your duration</Text>
+          <Text style={styles.sectionTitle}>
+            {active ? 'Renew or Switch Plan' : 'Available Plans'}
+          </Text>
+          <Text style={styles.plansCaption}>
+            {active ? 'Renewals add days to your current plan' : 'Pick a duration to get started'}
+          </Text>
         </View>
 
         {loading && <ActivityIndicator color={theme.primary} style={{ marginTop: 20 }} />}
         {!loading && plans.length === 0 && (
           <Text style={{ color: theme.secondaryText, textAlign: 'center', marginTop: 20 }}>
-            No plans available yet.
+            No plans available yet. Ask your gym owner to add plans.
           </Text>
         )}
-        {plans.map((plan) => (
-          <View key={plan.id} style={styles.planCard}>
-            <View style={styles.planInfo}>
-              <View style={styles.planNameRow}>
-                <Text style={styles.planName}>{plan.name}</Text>
+        {plans.filter(p => p.active).map((plan) => {
+          const subscribing = subscribingId === plan.id;
+          return (
+            <View key={plan.id} style={styles.planCard}>
+              <View style={styles.planInfo}>
+                <View style={styles.planNameRow}>
+                  <Text style={styles.planName}>{plan.name}</Text>
+                </View>
+                <Text style={styles.planDuration}>{durationLabel(plan.duration_days)}</Text>
+                <Pressable
+                  disabled={subscribing || !!subscribingId}
+                  onPress={() => subscribe(plan)}
+                  style={({ pressed }) => [
+                    {
+                      marginTop: 10,
+                      backgroundColor: theme.primary,
+                      paddingVertical: 10,
+                      paddingHorizontal: 16,
+                      borderRadius: 10,
+                      alignSelf: 'flex-start',
+                      opacity: subscribing || (!!subscribingId && !subscribing) ? 0.6 : pressed ? 0.85 : 1,
+                    },
+                  ]}
+                >
+                  <Text style={{ color: theme.background, fontWeight: '800', fontSize: 13 }}>
+                    {subscribing ? 'Processing…' : active ? 'Renew with this plan' : 'Subscribe'}
+                  </Text>
+                </Pressable>
               </View>
-
-              <Text style={styles.planDuration}>{durationLabel(plan.duration_days)}</Text>
-              <Text style={styles.planDescription}>
-                {plan.active ? 'Available now' : 'Currently paused'}
-              </Text>
+              <View style={styles.priceContainer}>
+                <Text style={styles.planPrice}>{priceStr(plan)}</Text>
+                <Text style={styles.perMonth}>{perLabel(plan.duration_days)}</Text>
+              </View>
             </View>
-
-            <View style={styles.priceContainer}>
-              <Text style={styles.planPrice}>{priceStr(plan)}</Text>
-              <Text style={styles.perMonth}>{perLabel(plan.duration_days)}</Text>
-            </View>
-          </View>
-        ))}
+          );
+        })}
 
         <View style={styles.noteCard}>
           <Text style={styles.noteTitle}>Need help with your plan?</Text>

@@ -33,10 +33,10 @@ export default function OwnerDashboard() {
   ] as const;
 
   const quickActions = [
-    { title: 'View Members', icon: 'people-outline', route: '/(admin)/members' },
-    { title: 'Check Attendance', icon: 'clipboard-outline', route: '/(admin)/attendance' },
-    { title: 'Classes', icon: 'calendar-outline', route: '/(admin)/classes' },
-    { title: 'More', icon: 'ellipsis-horizontal-outline', route: '/(admin)/more' },
+    { title: 'Members', icon: 'people-outline', route: '/(admin)/members' },
+    { title: 'Attendance', icon: 'clipboard-outline', route: '/(admin)/attendance' },
+    { title: 'Membership Plans', icon: 'pricetags-outline', route: '/(admin-pages)/plans' },
+    { title: 'Renewals', icon: 'refresh-outline', route: '/(admin-pages)/renewals' },
   ] as const;
 
   return (
@@ -81,7 +81,7 @@ export default function OwnerDashboard() {
                   },
                 ]}
                 onPress={() =>
-                  router.push('/settings/notifications' as any)
+                  router.push('/(admin-pages)/notifications' as any)
                 }
                 accessibilityLabel="Notifications"
               >
@@ -411,7 +411,7 @@ export default function OwnerDashboard() {
                 pressed && styles.pressed,
               ]}
               onPress={() =>
-                router.push('/(admin)/more' as any)
+                router.push('/(admin-pages)/subscription' as any)
               }
             >
               <Text

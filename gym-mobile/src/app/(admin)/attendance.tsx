@@ -69,13 +69,14 @@ member.name.toLowerCase().includes(search.toLowerCase())
 return (
 <SafeAreaView
 style={[styles.container, { backgroundColor: theme.background }]}
-> <ScrollView showsVerticalScrollIndicator={false}> <View style={styles.header}> <View>
-<Text style={[styles.title, { color: theme.text }]}>
-Attendance </Text>
-<Text style={[styles.subtitle, { color: theme.secondaryText }]}>
-Track your members' attendance </Text> </View>
+>
+<ScrollView showsVerticalScrollIndicator={false}>
+<View style={styles.header}>
+<View>
+<Text style={[styles.title, { color: theme.text }]}>Attendance</Text>
+<Text style={[styles.subtitle, { color: theme.secondaryText }]}>Track your members' attendance</Text>
+</View>
 
-```
       <Pressable
         style={[styles.dateButton, { backgroundColor: theme.card }]}
       >

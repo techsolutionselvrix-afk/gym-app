@@ -21,11 +21,13 @@ const { theme } = useAppTheme();
 return (
 <SafeAreaView
 style={[styles.container, { backgroundColor: theme.background }]}
-> <ScrollView showsVerticalScrollIndicator={false}> <View style={styles.header}> <View>
-<Text style={[styles.title, { color: theme.text }]}>
-Classes </Text>
-<Text style={[styles.subtitle, { color: theme.secondaryText }]}>
-Manage your gym classes </Text> </View>
+>
+<ScrollView showsVerticalScrollIndicator={false}>
+<View style={styles.header}>
+<View>
+<Text style={[styles.title, { color: theme.text }]}>Classes</Text>
+<Text style={[styles.subtitle, { color: theme.secondaryText }]}>Manage your gym classes</Text>
+</View>
 
 
       <Pressable
