@@ -48,48 +48,15 @@ export default function DietPlanScreen() {
           </View>
         </View>
 
-        <View style={styles.calorieCard}>
-          <Text style={styles.cardLabel}>DAILY CALORIE GOAL</Text>
-          <View style={styles.calorieRow}>
-            <Text style={styles.calorieNumber}>1,450</Text>
-            <Text style={styles.calorieUnit}>kcal / day</Text>
-          </View>
-
-          <View style={styles.progressBackground}>
-            <View style={styles.progressFill} />
-          </View>
-
-          <Text style={styles.cardNote}>
-            Sample target · Your personal goal may differ
+        <View style={[styles.mealCard, { justifyContent: 'center', paddingVertical: 32, alignItems: 'center' }]}>
+          <Text style={{ fontSize: 32, marginBottom: 10 }}>🥗</Text>
+          <Text style={{ color: theme.text, fontWeight: '700', fontSize: 15 }}>
+            No diet plan assigned yet
+          </Text>
+          <Text style={{ color: theme.secondaryText, fontSize: 12, textAlign: 'center', marginTop: 8, lineHeight: 18 }}>
+            Your trainer will add meals and a daily calorie goal here.
           </Text>
         </View>
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Today's Meals</Text>
-          <Text style={styles.mealCount}>{meals.length} meals</Text>
-        </View>
-
-        {meals.length === 0 ? (
-          <View style={[styles.mealCard, { justifyContent: 'center', paddingVertical: 24 }]}>
-            <Text style={{ color: theme.secondaryText, textAlign: 'center' }}>
-              No diet plan assigned yet.{'\n'}Your trainer will add one here.
-            </Text>
-          </View>
-        ) : meals.map((meal) => (
-          <View style={styles.mealCard} key={meal.name}>
-            <View style={styles.mealEmoji}>
-              <Text style={styles.emoji}>{meal.emoji}</Text>
-            </View>
-
-            <View style={styles.mealDetails}>
-              <Text style={styles.mealTime}>{meal.time}</Text>
-              <Text style={styles.mealName}>{meal.name}</Text>
-              <Text style={styles.mealFood}>{meal.food}</Text>
-            </View>
-
-            <Text style={styles.mealCalories}>{meal.calories} kcal</Text>
-          </View>
-        ))}
 
         <View style={styles.waterCard}>
           <View style={styles.waterHeader}>
@@ -140,10 +107,6 @@ export default function DietPlanScreen() {
           )}
         </View>
 
-        <Text style={styles.disclaimer}>
-          This is a sample diet plan for UI demonstration, not personalized
-          nutrition advice.
-        </Text>
       </ScrollView>
     </SafeAreaView>
   );

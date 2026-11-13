@@ -1,10 +1,64 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, EmailStr, Field
 
 from app.deps import CurrentUser, require_roles
 from app.schemas.user import ProfileOut
 from app.supabase_client import get_service_client
 
 router = APIRouter(prefix="/members", tags=["members"])
+
+
+class MemberCreate(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=72)
+    full_name: str = Field(min_length=1, max_length=120)
+    phone: str | None = None
+
+
+@router.post("", response_model=ProfileOut, status_code=201)
+def create_member(payload: MemberCreate, user: CurrentUser = Depends(require_roles("admin"))):
+    """Owner creates a member under their own gym.
+    Sends Supabase confirmation email; the member must verify before login.
+    """
+    if not user.gym_id:
+        raise HTTPException(400, "Your account is not attached to any gym")
+
+    sb = get_service_client()
+    try:
+        created = sb.auth.admin.create_user({
+            "email": str(payload.email),
+            "password": payload.password,
+            "email_confirm": False,
+            "user_metadata": {
+                "full_name": payload.full_name,
+                "phone": payload.phone,
+                "gym_id": user.gym_id,
+                "role": "member",
+            },
+        })
+    except Exception as exc:
+        msg = str(exc)
+        if "already" in msg.lower() or "registered" in msg.lower():
+            raise HTTPException(409, "A user with that email already exists")
+        raise HTTPException(400, f"Could not create user: {msg}")
+
+    u = getattr(created, "user", None) or created
+    new_id = getattr(u, "id", None) or (u.get("id") if isinstance(u, dict) else None)
+    if not new_id:
+        raise HTTPException(500, "Auth user created but no id returned")
+
+    profile_row = {
+        "id": new_id,
+        "email": str(payload.email),
+        "full_name": payload.full_name,
+        "phone": payload.phone,
+        "role": "member",
+        "gym_id": user.gym_id,
+    }
+    # upsert so a trigger-created row doesn't block us.
+    sb.table("profiles").upsert(profile_row, on_conflict="id").execute()
+    res = sb.table("profiles").select("*").eq("id", new_id).limit(1).execute()
+    return (res.data or [profile_row])[0]
 
 
 @router.get("", response_model=list[ProfileOut])

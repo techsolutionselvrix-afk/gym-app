@@ -40,6 +40,8 @@ export default function OwnerPlansScreen() {
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [days, setDays] = useState<number>(30);
+  const [customMode, setCustomMode] = useState(false);
+  const [customMonths, setCustomMonths] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -65,18 +67,27 @@ export default function OwnerPlansScreen() {
     if (!isFinite(amount) || amount <= 0) {
       return Alert.alert('Invalid price', 'Enter a positive number.');
     }
+    let finalDays = days;
+    if (customMode) {
+      const m = Number(customMonths);
+      if (!Number.isInteger(m) || m <= 0 || m > 120) {
+        return Alert.alert('Invalid duration', 'Enter a whole number of months between 1 and 120.');
+      }
+      finalDays = m * 30;
+    }
     setSaving(true);
     try {
       const created = await Api.createPlan({
         gym_id: profile.gym_id,
         name: name.trim(),
         price_cents: Math.round(amount * 100),
-        duration_days: days,
+        duration_days: finalDays,
         currency: 'INR',
         active: true,
       } as any);
       setPlans((prev) => [...prev, created]);
       setName(''); setPrice(''); setDays(30);
+      setCustomMode(false); setCustomMonths('');
       setModalOpen(false);
     } catch (e) {
       const msg = e instanceof ApiError ? e.message : (e as Error).message;
@@ -184,11 +195,11 @@ export default function OwnerPlansScreen() {
             <Text style={[styles.label, { color: theme.text }]}>Duration</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
               {DURATIONS.map((d) => {
-                const on = days === d.days;
+                const on = !customMode && days === d.days;
                 return (
                   <Pressable
                     key={d.days}
-                    onPress={() => setDays(d.days)}
+                    onPress={() => { setCustomMode(false); setDays(d.days); }}
                     style={{
                       paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1,
                       backgroundColor: on ? theme.primary : theme.card,
@@ -201,7 +212,36 @@ export default function OwnerPlansScreen() {
                   </Pressable>
                 );
               })}
+              <Pressable
+                onPress={() => setCustomMode(true)}
+                style={{
+                  paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1,
+                  backgroundColor: customMode ? theme.primary : theme.card,
+                  borderColor: customMode ? theme.primary : theme.border,
+                }}
+              >
+                <Text style={{ color: customMode ? theme.background : theme.text, fontSize: 12, fontWeight: '700' }}>
+                  Custom
+                </Text>
+              </Pressable>
             </View>
+
+            {customMode && (
+              <>
+                <Text style={[styles.label, { color: theme.text }]}>Number of months</Text>
+                <TextInput
+                  value={customMonths}
+                  onChangeText={setCustomMonths}
+                  keyboardType="numeric"
+                  placeholder="e.g. 2"
+                  placeholderTextColor={theme.secondaryText}
+                  style={[styles.input, { color: theme.text, borderColor: theme.border, backgroundColor: theme.inputBackground }]}
+                />
+                <Text style={{ color: theme.secondaryText, fontSize: 11, marginTop: 4 }}>
+                  Each month counts as 30 days.
+                </Text>
+              </>
+            )}
 
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 20 }}>
               <Pressable

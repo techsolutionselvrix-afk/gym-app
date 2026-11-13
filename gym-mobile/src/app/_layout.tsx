@@ -3,6 +3,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 
 import { ThemeProvider, useAppTheme } from '@/context/ThemeContext';
+import { ConfirmHost } from '@/components/ConfirmDialog';
 
 function AppNavigator() {
   const { theme, themeMode } = useAppTheme();
@@ -38,6 +39,7 @@ function AppNavigator() {
         {/* Super Admin */}
         <Stack.Screen name="(super-admin)" />
       </Stack>
+      <ConfirmHost />
     </>
   );
 }

@@ -85,6 +85,8 @@ export const Api = {
     const qs = q.toString();
     return api<Profile[]>(`/members${qs ? `?${qs}` : ''}`);
   },
+  createMember: (body: { email: string; password: string; full_name: string; phone?: string }) =>
+    api<Profile>('/members', { method: 'POST', body }),
 
   checkIn: (gym_id: string) =>
     api<Attendance>('/attendance/check-in', { method: 'POST', body: { gym_id, method: 'qr' } }),
@@ -99,7 +101,22 @@ export const Api = {
   getMyAppSubscription: () => api<AppSubscription>('/gyms/me/subscription'),
   renewMyAppSubscription: (plan_id: string) =>
     api<AppSubscription>('/gyms/me/subscription/renew', { method: 'POST', body: { plan_id } }),
+
+  listClasses: () => api<GymClass[]>('/classes'),
+  createClass: (body: { name: string; start_time: string; end_time: string; capacity?: number }) =>
+    api<GymClass>('/classes', { method: 'POST', body }),
+  deleteClass: (id: string) => api<void>(`/classes/${id}`, { method: 'DELETE' }),
 };
+
+export interface GymClass {
+  id: string;
+  gym_id: string;
+  name: string;
+  start_time: string;
+  end_time: string;
+  capacity: number;
+  trainer_id?: string | null;
+}
 
 export interface AppSubscriptionPlan {
   id: string;

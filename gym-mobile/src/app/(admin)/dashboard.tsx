@@ -144,7 +144,7 @@ export default function OwnerDashboard() {
                 >
                   <Ionicons
                     name={stat.icon}
-                    size={23}
+                    size={16}
                     color={theme.primary}
                   />
                 </View>
@@ -545,30 +545,30 @@ const styles = StyleSheet.create({
     width: '48%',
     flexGrow: 1,
     flexBasis: '42%',
-    padding: 15,
-    borderRadius: 18,
+    padding: 10,
+    borderRadius: 14,
     borderWidth: 1,
-    minHeight: 145,
+    minHeight: 86,
   },
 
   statIconContainer: {
-    width: 42,
-    height: 42,
-    borderRadius: 13,
+    width: 30,
+    height: 30,
+    borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: 6,
   },
 
   statValue: {
-    fontSize: 25,
+    fontSize: 18,
     fontWeight: '800',
   },
 
   statLabel: {
-    fontSize: 11,
-    marginTop: 5,
-    lineHeight: 16,
+    fontSize: 10,
+    marginTop: 2,
+    lineHeight: 14,
   },
 
   actionsGrid: {
