@@ -10,7 +10,7 @@ from slowapi.util import get_remote_address
 from app.config import get_settings
 from app.errors import register_error_handlers
 from app.logging_setup import configure_logging
-from app.routers import attendance, classes, gyms, health, me, members, memberships, plans
+from app.routers import attendance, classes, gyms, health, holidays, me, members, memberships, plans
 
 log = logging.getLogger(__name__)
 
@@ -69,6 +69,7 @@ def create_app() -> FastAPI:
     app.include_router(memberships.router)
     app.include_router(attendance.router)
     app.include_router(classes.router)
+    app.include_router(holidays.router)
 
     @app.get("/")
     def root():

@@ -17,6 +17,7 @@ type MenuItem = {
   icon:
     | 'pricetags-outline'
     | 'refresh-outline'
+    | 'calendar-outline'
     | 'color-palette-outline'
     | 'card-outline'
     | 'person-outline';
@@ -35,6 +36,12 @@ const menuItems: MenuItem[] = [
     subtitle: 'Who renewed, who is expiring soon',
     icon: 'refresh-outline',
     onPress: () => router.push('/(admin-pages)/renewals' as any),
+  },
+  {
+    title: 'Calendar',
+    subtitle: 'Post gym closures; see public holidays',
+    icon: 'calendar-outline',
+    onPress: () => router.push('/(admin-pages)/calendar' as any),
   },
   {
     title: 'App Subscription',

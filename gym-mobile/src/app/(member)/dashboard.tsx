@@ -16,7 +16,7 @@ import { Colors } from '@/constants/theme';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppTheme } from '@/context/ThemeContext';
-import { Api, Profile, Attendance } from '@/lib/api';
+import { Api, Profile, Attendance, GymHoliday } from '@/lib/api';
 
 const prettyGender = (g?: string | null) => {
   if (!g) return '—';
@@ -36,18 +36,29 @@ export default function MemberDashboard() {
   const [profile, setProfile] = useState<Profile | null>(null);
 
   const [history, setHistory] = useState<Attendance[]>([]);
+  const [holidays, setHolidays] = useState<GymHoliday[]>([]);
   const [notifOpen, setNotifOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
-    Promise.all([Api.me().catch(() => null), Api.myAttendance().catch(() => [])])
-      .then(([p, a]) => {
+    Promise.all([
+      Api.me().catch(() => null),
+      Api.myAttendance().catch(() => []),
+      Api.listHolidays().catch(() => [] as GymHoliday[]),
+    ])
+      .then(([p, a, h]) => {
         if (!active) return;
         if (p) setProfile(p);
         setHistory(a ?? []);
+        setHolidays(h ?? []);
       });
     return () => { active = false; };
   }, []);
+
+  const upcomingHolidays = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    return holidays.filter((h) => h.date >= today).slice(0, 5);
+  }, [holidays]);
 
   const name = firstName(profile?.full_name, profile?.email);
   const initial = name.charAt(0).toUpperCase();
@@ -118,7 +129,7 @@ export default function MemberDashboard() {
               accessibilityLabel="Notifications"
             >
               <Ionicons name="notifications-outline" size={24} color={theme.text} />
-              <View style={styles.notificationDot} />
+              {upcomingHolidays.length > 0 && <View style={styles.notificationDot} />}
             </Pressable>
 
             <Pressable
@@ -214,6 +225,16 @@ export default function MemberDashboard() {
               Membership
             </Text>
           </Pressable>
+
+          <Pressable
+            style={[styles.quickCard, { backgroundColor: theme.card, borderColor: theme.border }]}
+            onPress={() => router.push('/(member)/calendar' as any)}
+          >
+            <Text style={styles.quickIcon}>📆</Text>
+            <Text style={[styles.quickTitle, { color: theme.text }]}>
+              Calendar
+            </Text>
+          </Pressable>
         </View>
 
         {/* Statistics */}
@@ -253,15 +274,48 @@ export default function MemberDashboard() {
               <Ionicons name="notifications-outline" size={22} color={theme.text} />
               <Text style={{ color: theme.text, fontSize: 18, fontWeight: '800' }}>Notifications</Text>
             </View>
-            <Text style={{ color: theme.secondaryText, fontSize: 14, lineHeight: 20, marginBottom: 20 }}>
-              You're all caught up. We'll let you know when there's something new.
-            </Text>
-            <Pressable
-              onPress={() => setNotifOpen(false)}
-              style={{ backgroundColor: theme.primary, borderRadius: 11, paddingVertical: 12, alignItems: 'center' }}
-            >
-              <Text style={{ color: theme.background, fontWeight: '800' }}>Close</Text>
-            </Pressable>
+            {upcomingHolidays.length === 0 ? (
+              <Text style={{ color: theme.secondaryText, fontSize: 14, lineHeight: 20, marginBottom: 20 }}>
+                You're all caught up. We'll let you know when there's something new.
+              </Text>
+            ) : (
+              <ScrollView style={{ maxHeight: 320, marginBottom: 14 }} showsVerticalScrollIndicator={false}>
+                {upcomingHolidays.map((h) => (
+                  <View
+                    key={h.id}
+                    style={{
+                      padding: 12, borderRadius: 11, borderWidth: 1,
+                      borderColor: theme.border, marginBottom: 8,
+                      backgroundColor: theme.background,
+                    }}
+                  >
+                    <Text style={{ color: '#DC4545', fontSize: 10, fontWeight: '800', marginBottom: 4 }}>
+                      GYM CLOSED · {h.date}
+                    </Text>
+                    <Text style={{ color: theme.text, fontWeight: '700', fontSize: 14 }}>{h.title}</Text>
+                    {h.description && (
+                      <Text style={{ color: theme.secondaryText, fontSize: 12, marginTop: 4 }}>
+                        {h.description}
+                      </Text>
+                    )}
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <Pressable
+                onPress={() => { setNotifOpen(false); router.push('/(member)/calendar' as any); }}
+                style={{ flex: 1, backgroundColor: theme.card, borderColor: theme.border, borderWidth: 1, borderRadius: 11, paddingVertical: 12, alignItems: 'center' }}
+              >
+                <Text style={{ color: theme.text, fontWeight: '700' }}>Open calendar</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setNotifOpen(false)}
+                style={{ flex: 1, backgroundColor: theme.primary, borderRadius: 11, paddingVertical: 12, alignItems: 'center' }}
+              >
+                <Text style={{ color: theme.background, fontWeight: '800' }}>Close</Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       </Modal>

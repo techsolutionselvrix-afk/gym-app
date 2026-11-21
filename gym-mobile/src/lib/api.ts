@@ -106,7 +106,46 @@ export const Api = {
   createClass: (body: { name: string; start_time: string; end_time: string; capacity?: number }) =>
     api<GymClass>('/classes', { method: 'POST', body }),
   deleteClass: (id: string) => api<void>(`/classes/${id}`, { method: 'DELETE' }),
+
+  listHolidays: (year?: number, month?: number) => {
+    const q = new URLSearchParams();
+    if (year) q.set('year', String(year));
+    if (month) q.set('month', String(month));
+    const qs = q.toString();
+    return api<GymHoliday[]>(`/holidays${qs ? `?${qs}` : ''}`);
+  },
+  createHoliday: (body: { date: string; title: string; description?: string }) =>
+    api<GymHoliday>('/holidays', { method: 'POST', body }),
+  deleteHoliday: (id: string) => api<void>(`/holidays/${id}`, { method: 'DELETE' }),
 };
+
+export interface GymHoliday {
+  id: string;
+  gym_id: string;
+  date: string;
+  title: string;
+  description?: string | null;
+  created_at: string;
+}
+
+export interface PublicHoliday {
+  date: string;
+  localName: string;
+  name: string;
+  countryCode: string;
+  global?: boolean;
+  types?: string[];
+}
+
+export async function fetchPublicHolidaysIN(year: number): Promise<PublicHoliday[]> {
+  try {
+    const res = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/IN`);
+    if (!res.ok) return [];
+    return (await res.json()) as PublicHoliday[];
+  } catch {
+    return [];
+  }
+}
 
 export interface GymClass {
   id: string;

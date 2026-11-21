@@ -11,14 +11,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAppTheme } from '@/context/ThemeContext';
-import { Api, AppSubscription, MembershipRow } from '@/lib/api';
+import { Api, AppSubscription, GymHoliday, MembershipRow } from '@/lib/api';
 
 type Notice = {
   id: string;
   title: string;
   body: string;
   tone: 'info' | 'warn' | 'danger' | 'success';
-  icon: 'alert-circle' | 'checkmark-circle' | 'time' | 'card' | 'notifications';
+  icon: 'alert-circle' | 'checkmark-circle' | 'time' | 'card' | 'notifications' | 'calendar';
   route?: string;
 };
 
@@ -34,14 +34,17 @@ export default function NotificationsScreen() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [memsRes, subRes] = await Promise.allSettled([
+    const [memsRes, subRes, holRes] = await Promise.allSettled([
       Api.listMemberships('active'),
       Api.getMyAppSubscription(),
+      Api.listHolidays(),
     ]);
     const mems: MembershipRow[] =
       memsRes.status === 'fulfilled' ? memsRes.value ?? [] : [];
     const sub: AppSubscription | null =
       subRes.status === 'fulfilled' ? subRes.value : null;
+    const holidays: GymHoliday[] =
+      holRes.status === 'fulfilled' ? holRes.value ?? [] : [];
 
     const out: Notice[] = [];
 
@@ -68,6 +71,21 @@ export default function NotificationsScreen() {
     }
 
     const today = new Date();
+    const todayStr = today.toISOString().slice(0, 10);
+    for (const h of holidays) {
+      if (h.date < todayStr) continue;
+      const left = daysBetween(h.date + 'T00:00:00');
+      const when = left === 0 ? 'today' : left === 1 ? 'tomorrow' : `in ${left} days`;
+      out.push({
+        id: `hol-${h.id}`,
+        title: `Gym closure ${when}`,
+        body: `${h.title} — ${h.date}`,
+        tone: left <= 2 ? 'warn' : 'info',
+        icon: 'calendar',
+        route: '/(admin-pages)/calendar',
+      });
+    }
+
     for (const m of mems) {
       const left = daysBetween(m.end_date);
       const who = m.member_name || m.member_email || 'A member';
